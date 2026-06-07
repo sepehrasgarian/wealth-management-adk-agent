@@ -20,6 +20,7 @@ from google.adk.agents import Agent
 
 from . import config, observability, redaction, security
 from .tools import (
+    confirm_transfer,
     get_portfolio_balance,
     get_security_question,
     transfer_funds,
@@ -46,8 +47,13 @@ You handle two kinds of requests:
      a. Call `get_security_question` and ask the user the exact question returned.
      b. When the user answers, call `verify_security_answer` with their answer.
      c. If verified is true, call `transfer_funds` with the source account,
-        destination account, and amount. The user will be asked to confirm the
-        exact transfer; once they confirm, report the result and the new balances.
+        destination account, and amount. Then handle confirmation:
+        - If a confirmation prompt/button appears, wait for the user to confirm,
+          then report the result and the new balances.
+        - If `transfer_funds` returns status "confirmation_required", tell the
+          user the exact transfer and ask them to confirm by saying yes or no.
+          When they reply, call `confirm_transfer` with approve=true (yes) or
+          approve=false (no), then report the result.
      d. If verified is false and locked is false, the answer was wrong but the
         user may try again. Tell them the answer was incorrect, mention how many
         attempts remain (attempts_remaining), and ask them to answer the security
@@ -75,6 +81,7 @@ root_agent = Agent(
         get_security_question,
         verify_security_answer,
         transfer_funds,
+        confirm_transfer,
     ],
     # The security gate runs before every tool call and blocks sensitive tools
     # unless the session is verified. This is the authoritative enforcement.

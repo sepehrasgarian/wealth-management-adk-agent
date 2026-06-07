@@ -78,7 +78,7 @@ MAX_FAILED_ATTEMPTS = env_int("WEALTH_MAX_FAILED_ATTEMPTS", 3)
 
 # Tool names that move money / take sensitive action and therefore require a
 # verified session. The security gate protects every tool listed here.
-SENSITIVE_TOOLS = {"transfer_funds"}
+SENSITIVE_TOOLS = {"transfer_funds", "confirm_transfer"}
 
 # Whether transfers require an explicit human-in-the-loop confirmation before the
 # money moves. On by default for real use and the adk web demo. It is turned OFF
@@ -86,6 +86,13 @@ SENSITIVE_TOOLS = {"transfer_funds"}
 # so those tests run deterministically; the confirmation logic is covered
 # separately by unit tests.
 REQUIRE_TRANSFER_CONFIRMATION = env_bool("WEALTH_REQUIRE_TRANSFER_CONFIRMATION", True)
+
+# How the user confirms a transfer:
+#   "button"        -> native ADK confirmation button (best in text / adk web,
+#                      but NOT supported in voice/live mode).
+#   "conversational"-> the agent asks the user to say "yes"/"no" (works in BOTH
+#                      voice and text). Use this for the voice demo.
+CONFIRMATION_MODE = env("WEALTH_CONFIRMATION_MODE", "button")
 
 
 # ---------------------------------------------------------------------------

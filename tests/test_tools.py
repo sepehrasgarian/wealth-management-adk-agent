@@ -7,7 +7,7 @@ model calls or API key.
 
 from __future__ import annotations
 
-from wealth_agent import security, services, tools
+from wealth_agent import config, security, services, tools
 from tests.fakes import FakeToolConfirmation, FakeToolContext
 
 
@@ -114,3 +114,39 @@ def test_transfer_insufficient_funds_is_rejected(ctx):
     result = tools.transfer_funds("checking", "savings", 999999, ctx)
     assert result["status"] == "error"
     assert "insufficient" in result["message"].lower()
+
+
+# --- Conversational confirmation (voice-compatible path) ---
+
+def test_conversational_transfer_requests_confirmation(ctx, monkeypatch):
+    monkeypatch.setattr(config, "CONFIRMATION_MODE", "conversational")
+    _verify(ctx)
+    result = tools.transfer_funds("checking", "savings", 500, ctx)
+    assert result["status"] == "confirmation_required"
+    # Pending transfer is recorded; no money has moved yet.
+    assert ctx.state[tools.STATE_PENDING_TRANSFER]["amount"] == 500
+    assert services.get_account_balances("user_123")["checking_balance"] == 2000.0
+
+
+def test_conversational_confirm_yes_executes_and_consumes(ctx, monkeypatch):
+    monkeypatch.setattr(config, "CONFIRMATION_MODE", "conversational")
+    _verify(ctx)
+    tools.transfer_funds("checking", "savings", 500, ctx)
+    result = tools.confirm_transfer(approve=True, tool_context=ctx)
+    assert result["status"] == "success"
+    assert result["checking_balance"] == 1500.0
+    assert ctx.state[tools.STATE_PENDING_TRANSFER] is None
+    assert security.is_verified(ctx.state) is False  # single-use, consumed
+
+
+def test_conversational_confirm_no_cancels(ctx, monkeypatch):
+    monkeypatch.setattr(config, "CONFIRMATION_MODE", "conversational")
+    _verify(ctx)
+    tools.transfer_funds("checking", "savings", 500, ctx)
+    result = tools.confirm_transfer(approve=False, tool_context=ctx)
+    assert result["status"] == "error"
+    assert services.get_account_balances("user_123")["checking_balance"] == 2000.0
+
+
+def test_confirm_transfer_with_nothing_pending_errors(ctx):
+    assert tools.confirm_transfer(approve=True, tool_context=ctx)["status"] == "error"

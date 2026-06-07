@@ -197,15 +197,24 @@ provider, and the traces. This project applies layered data protection:
 
 The same agent runs over voice using a Gemini native-audio Live model — no code
 changes, just a model swap (ADK's `adk web` shows a mic when the model supports
-the Live API):
+the Live API). Use **conversational** confirmation for voice, because ADK's
+native confirmation button is not supported in live/voice mode:
 
 ```bash
-WEALTH_MODEL=gemini-2.5-flash-native-audio-latest adk web
+WEALTH_MODEL=gemini-2.5-flash-native-audio-latest \
+WEALTH_CONFIRMATION_MODE=conversational \
+adk web
 ```
 
-**Security note:** spoken knowledge-based answers are a weaker channel
-(overhearing / recording). In production we would prefer voice biometrics or an
-out-of-band approval rather than reading a security answer aloud.
+**Confirmation modes** (`WEALTH_CONFIRMATION_MODE`):
+- `button` (default) — native ADK Confirm/Reject button; best in text / `adk web`.
+- `conversational` — the agent asks you to say "yes"/"no"; works in **voice and
+  text** (the agent calls `confirm_transfer` with your answer).
+
+**Voice caveats:** ADK live streaming is preview — a bidirectional stream can't be
+restarted (refresh to start a new one). And spoken knowledge-based answers are a
+weaker channel (overhearing / recording), so in production we'd prefer voice
+biometrics or an out-of-band approval rather than reading a security answer aloud.
 
 ---
 
@@ -220,6 +229,7 @@ environment variables (`.env`):
 | `WEALTH_VERIFICATION_TTL_SECONDS` | `120` | How long a verification stays valid |
 | `WEALTH_MAX_FAILED_ATTEMPTS` | `3` | Wrong answers before lockout |
 | `WEALTH_REQUIRE_TRANSFER_CONFIRMATION` | `true` | HITL confirmation on transfers |
+| `WEALTH_CONFIRMATION_MODE` | `button` | `button` (text) or `conversational` (voice) |
 | `WEALTH_TRACING_ENABLED` | `false` | Export OpenTelemetry traces |
 
 ---

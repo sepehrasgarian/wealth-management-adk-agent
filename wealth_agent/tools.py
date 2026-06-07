@@ -19,6 +19,8 @@ from .database import DEMO_USER_ID
 
 # Session-state key holding the authenticated user id.
 STATE_USER_ID = "user_id"
+# Session-state key holding a transfer awaiting conversational confirmation.
+STATE_PENDING_TRANSFER = "pending_transfer"
 
 
 def _current_user_id(tool_context: ToolContext) -> str:
@@ -29,6 +31,42 @@ def _current_user_id(tool_context: ToolContext) -> str:
     agent also works out of the box in `adk web`.
     """
     return tool_context.state.get(STATE_USER_ID, DEMO_USER_ID)
+
+
+def _perform_transfer(
+    tool_context: ToolContext,
+    from_account: str,
+    to_account: str,
+    amount: float,
+) -> dict:
+    """Run the transfer via the service layer, then clear verification and audit it.
+
+    Shared by every confirmation path (none / button / conversational) so the
+    actual money movement and bookkeeping live in exactly one place.
+    """
+    user_id = _current_user_id(tool_context)
+    try:
+        balances = services.execute_transfer(user_id, from_account, to_account, amount)
+    except services.TransferError as error:
+        return {"status": "error", "message": str(error)}
+
+    # Verification is single-use: clear it so the next transfer must re-verify.
+    security.consume(tool_context.state)
+
+    # Audit the completed sensitive action (amount + accounts only — no secrets).
+    security.log_security_event(
+        "transfer_completed",
+        tool_context,
+        user_id=user_id,
+        from_account=from_account,
+        to_account=to_account,
+        amount=amount,
+    )
+    return {
+        "status": "success",
+        "message": f"Transferred {amount:.2f} from {from_account} to {to_account}.",
+        **balances,
+    }
 
 
 def get_portfolio_balance(tool_context: ToolContext) -> dict:
@@ -133,45 +171,71 @@ def transfer_funds(
         {"status": "success", "message", "checking_balance", "savings_balance"},
         or {"status": "pending"/"error", "message"}.
     """
-    # --- Human-in-the-loop confirmation of the exact transfer ---
-    # Can be disabled via config for deterministic trajectory evals; it is always
-    # on for real use and the adk web demo (see config.REQUIRE_TRANSFER_CONFIRMATION).
-    if config.REQUIRE_TRANSFER_CONFIRMATION:
-        confirmation = tool_context.tool_confirmation
-        if confirmation is None:
-            # First call: pause and ask the human to approve this specific transfer.
-            tool_context.request_confirmation(
-                hint=f"Please confirm: transfer {amount:.2f} from {from_account} to {to_account}."
-            )
-            return {"status": "pending", "message": "Awaiting your confirmation of this transfer."}
+    # Path 1 — no confirmation required (e.g. trajectory evals): transfer directly.
+    if not config.REQUIRE_TRANSFER_CONFIRMATION:
+        return _perform_transfer(tool_context, from_account, to_account, amount)
 
-        if not confirmation.confirmed:
-            # The human declined the confirmation.
-            security.log_security_event("transfer_declined_by_user", tool_context)
-            return {"status": "error", "message": "Transfer cancelled: you declined the confirmation."}
+    # Path 2 — conversational confirmation (works in voice AND text): record the
+    # pending transfer and ask the user to confirm in their next message. The
+    # agent then calls confirm_transfer with their yes/no.
+    if config.CONFIRMATION_MODE == "conversational":
+        tool_context.state[STATE_PENDING_TRANSFER] = {
+            "from_account": from_account,
+            "to_account": to_account,
+            "amount": amount,
+        }
+        return {
+            "status": "confirmation_required",
+            "message": (
+                f"Please confirm with the user: transfer {amount:.2f} from "
+                f"{from_account} to {to_account}. Ask them to say yes to proceed "
+                f"or no to cancel, then call confirm_transfer with their answer."
+            ),
+        }
 
-    # --- Confirmed: perform the transfer through the service layer ---
-    user_id = _current_user_id(tool_context)
-    try:
-        balances = services.execute_transfer(user_id, from_account, to_account, amount)
-    except services.TransferError as error:
-        return {"status": "error", "message": str(error)}
+    # Path 3 — native button confirmation (best in text / adk web; not supported
+    # in voice). Pause for the user to approve via the confirmation UI.
+    confirmation = tool_context.tool_confirmation
+    if confirmation is None:
+        tool_context.request_confirmation(
+            hint=f"Please confirm: transfer {amount:.2f} from {from_account} to {to_account}."
+        )
+        return {"status": "pending", "message": "Awaiting your confirmation of this transfer."}
+    if not confirmation.confirmed:
+        security.log_security_event("transfer_declined_by_user", tool_context)
+        return {"status": "error", "message": "Transfer cancelled: you declined the confirmation."}
 
-    # Verification is single-use: clear it so the next transfer must re-verify.
-    security.consume(tool_context.state)
+    return _perform_transfer(tool_context, from_account, to_account, amount)
 
-    # Audit the completed sensitive action (amount + accounts only — no secrets).
-    security.log_security_event(
-        "transfer_completed",
+
+def confirm_transfer(approve: bool, tool_context: ToolContext) -> dict:
+    """Confirm or cancel a transfer the user was asked to approve (SENSITIVE action).
+
+    Call this only after `transfer_funds` returned status "confirmation_required"
+    and the user has replied. This is the voice-friendly confirmation path.
+
+    Args:
+        approve: True if the user said yes (proceed), False if they said no (cancel).
+
+    Returns:
+        On approve+success: {"status": "success", "message", "checking_balance",
+        "savings_balance"}. On cancel or if nothing is pending:
+        {"status": "error", "message"}.
+    """
+    pending = tool_context.state.get(STATE_PENDING_TRANSFER)
+    if not pending:
+        return {"status": "error", "message": "There is no transfer awaiting confirmation."}
+
+    # Clear the pending request either way, so it cannot be reused.
+    tool_context.state[STATE_PENDING_TRANSFER] = None
+
+    if not approve:
+        security.log_security_event("transfer_declined_by_user", tool_context)
+        return {"status": "error", "message": "Transfer cancelled."}
+
+    return _perform_transfer(
         tool_context,
-        user_id=user_id,
-        from_account=from_account,
-        to_account=to_account,
-        amount=amount,
+        pending["from_account"],
+        pending["to_account"],
+        pending["amount"],
     )
-
-    return {
-        "status": "success",
-        "message": f"Transferred {amount:.2f} from {from_account} to {to_account}.",
-        **balances,
-    }
