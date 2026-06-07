@@ -131,6 +131,12 @@ def record_answer(session_state, is_correct: bool) -> str:
     return verification["status"]
 
 
+def attempts_remaining(session_state) -> int:
+    """How many verification attempts remain before the session locks."""
+    verification = get_state(session_state)
+    return max(0, config.MAX_FAILED_ATTEMPTS - verification["attempts"])
+
+
 def is_verified(session_state) -> bool:
     """True only if the session is VERIFIED and that verification is still fresh.
 

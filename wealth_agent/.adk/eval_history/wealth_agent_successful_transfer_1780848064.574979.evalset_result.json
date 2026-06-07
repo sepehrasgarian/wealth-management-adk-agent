@@ -1,0 +1,1635 @@
+{
+  "eval_set_result_id": "wealth_agent_successful_transfer_1780848064.574979",
+  "eval_set_result_name": "wealth_agent_successful_transfer_1780848064.574979",
+  "eval_set_id": "successful_transfer",
+  "eval_case_results": [
+    {
+      "eval_set_file": "successful_transfer",
+      "eval_set_id": "successful_transfer",
+      "eval_id": "successful_transfer_authenticated",
+      "final_eval_status": 1,
+      "eval_metric_results": null,
+      "overall_eval_metric_results": [
+        {
+          "metric_name": "tool_trajectory_avg_score",
+          "threshold": 1.0,
+          "criterion": {
+            "threshold": 1.0,
+            "include_intermediate_responses_in_final": false
+          },
+          "custom_function_path": null,
+          "score": 1.0,
+          "eval_status": 1,
+          "details": {
+            "rubric_scores": null
+          }
+        }
+      ],
+      "eval_metric_result_per_invocation": [
+        {
+          "actual_invocation": {
+            "invocation_id": "e-2a857017-f7f5-4097-998c-4e326fe28e99",
+            "user_content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "Transfer $500 from my checking to my savings account.",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "user"
+            },
+            "final_response": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "What is the name of your first pet?",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "model"
+            },
+            "intermediate_data": {
+              "invocation_events": [
+                {
+                  "author": "wealth_management_assistant",
+                  "content": {
+                    "parts": [
+                      {
+                        "media_resolution": null,
+                        "code_execution_result": null,
+                        "executable_code": null,
+                        "file_data": null,
+                        "function_call": {
+                          "id": "adk-f3917f33-1632-40e9-a027-50951bfa2a1b",
+                          "args": {},
+                          "name": "get_security_question",
+                          "partial_args": null,
+                          "will_continue": null
+                        },
+                        "function_response": null,
+                        "inline_data": null,
+                        "text": null,
+                        "thought": null,
+                        "thought_signature": "Cs4BAQw51sd9Zw_C_9DB2MP4Nzeco4W5lC0bq57J2YdQBV7rYju-f1GUcTwQgqBxDxHspbkElFl9LmXYVKMYixEZ0E8XzBfWH_lNOKkzx3eVR14wWMeB6eCeuYqrYbGeD0GzC9VSw4dlHs_aavlyKVZ2CQS4BH13MFdRIRMd9b0-tGT-ZcHRBhD8St6CgTOIdfPLYTDnSP7MZinZ3gxvEvklSmuUWwW4c8GA-UZt0uDLfA00-yEGTXjLdTrnOBlxbIwR2abisuPzyOnBLPrLy2w=",
+                        "video_metadata": null,
+                        "tool_call": null,
+                        "tool_response": null,
+                        "part_metadata": null
+                      }
+                    ],
+                    "role": "model"
+                  }
+                },
+                {
+                  "author": "wealth_management_assistant",
+                  "content": {
+                    "parts": [
+                      {
+                        "media_resolution": null,
+                        "code_execution_result": null,
+                        "executable_code": null,
+                        "file_data": null,
+                        "function_call": null,
+                        "function_response": {
+                          "will_continue": null,
+                          "scheduling": null,
+                          "parts": null,
+                          "id": "adk-f3917f33-1632-40e9-a027-50951bfa2a1b",
+                          "name": "get_security_question",
+                          "response": {
+                            "status": "success",
+                            "security_question": "What is the name of your first pet?"
+                          }
+                        },
+                        "inline_data": null,
+                        "text": null,
+                        "thought": null,
+                        "thought_signature": null,
+                        "video_metadata": null,
+                        "tool_call": null,
+                        "tool_response": null,
+                        "part_metadata": null
+                      }
+                    ],
+                    "role": "user"
+                  }
+                }
+              ]
+            },
+            "creation_timestamp": 1780848060.535928,
+            "rubrics": null,
+            "app_details": {
+              "agent_details": {
+                "wealth_management_assistant": {
+                  "name": "wealth_management_assistant",
+                  "instructions": "\nYou are a digital wealth management assistant for a brokerage platform. You help\nthe signed-in user with their checking and savings accounts.\n\nYou handle two kinds of requests:\n\n1. General queries (for example, \"What is my portfolio balance?\").\n   - Answer these directly. For balances, call `get_portfolio_balance` and report\n     the checking, savings, and total balances clearly.\n\n2. Sensitive actions (for example, \"Transfer $500 from checking to savings\").\n   These ALWAYS require verification first. Follow these steps in order and never\n   skip one:\n     a. Call `get_security_question` and ask the user the exact question returned.\n     b. When the user answers, call `verify_security_answer` with their answer.\n     c. If verified is true, call `transfer_funds` with the source account,\n        destination account, and amount. The user will be asked to confirm the\n        exact transfer; once they confirm, report the result and the new balances.\n     d. If verified is false and locked is false, the answer was wrong but the\n        user may try again. Tell them the answer was incorrect, mention how many\n        attempts remain (attempts_remaining), and ask them to answer the security\n        question again. Do NOT call get_security_question again and do NOT start\n        over — simply call `verify_security_answer` again with their new answer.\n     e. If locked is true, the account is locked due to too many failed attempts.\n        Tell the user the action is denied because the account is locked, and do\n        not continue the verification.\n\nImportant rules:\n- Never reveal the security answer, and never perform a transfer without a\n  successful verification in the current request.\n- Only \"checking\" and \"savings\" accounts exist. Amounts must be positive.\n- Be concise, clear, and professional.\n\n\nYou are an agent. Your internal name is \"wealth_management_assistant\". The description about you is \"Assistant for portfolio queries and verified account transfers.\".",
+                  "tool_declarations": [
+                    {
+                      "retrieval": null,
+                      "computer_use": null,
+                      "file_search": null,
+                      "google_search": null,
+                      "google_maps": null,
+                      "code_execution": null,
+                      "enterprise_web_search": null,
+                      "function_declarations": [
+                        {
+                          "description": "Return the signed-in user's checking and savings balances.\n\nThis is a general, non-sensitive query, so it needs no verification.\n\nReturns:\n    {\"status\": \"success\", \"checking_balance\", \"savings_balance\",\n    \"total_balance\"} or {\"status\": \"error\", \"message\"}.",
+                          "name": "get_portfolio_balance",
+                          "parameters": null,
+                          "parameters_json_schema": null,
+                          "response": null,
+                          "response_json_schema": null,
+                          "behavior": null
+                        },
+                        {
+                          "description": "Retrieve the user's security question and begin verification.\n\nCall this first whenever the user requests a sensitive action (such as a\ntransfer). Then ask the user the returned question and pass their reply to\n`verify_security_answer`.\n\nReturns:\n    {\"status\": \"success\", \"security_question\"} or {\"status\": \"error\",\n    \"message\"} (for example, if the account is locked).",
+                          "name": "get_security_question",
+                          "parameters": null,
+                          "parameters_json_schema": null,
+                          "response": null,
+                          "response_json_schema": null,
+                          "behavior": null
+                        },
+                        {
+                          "description": "Check the user's answer to their security question.\n\nThe result is recorded in the verification state machine. A correct answer\nmakes the session VERIFIED; repeated wrong answers eventually LOCK it.\n\nArgs:\n    answer: The answer the user gave to their security question.\n\nReturns:\n    {\"status\": \"success\", \"verified\": bool, \"locked\": bool}.",
+                          "name": "verify_security_answer",
+                          "parameters": null,
+                          "parameters_json_schema": {
+                            "properties": {
+                              "answer": {
+                                "title": "Answer",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "answer"
+                            ],
+                            "title": "verify_security_answerParams",
+                            "type": "object"
+                          },
+                          "response": null,
+                          "response_json_schema": null,
+                          "behavior": null
+                        },
+                        {
+                          "description": "Transfer money between the signed-in user's accounts (SENSITIVE action).\n\nTwo independent controls protect this tool:\n  1. The security gate (registered on the agent) blocks it unless the\n     session is VERIFIED — this runs before we even get here.\n  2. Human-in-the-loop: we ask the user to explicitly confirm THIS exact\n     transfer before any money moves.\n\nArgs:\n    from_account: \"checking\" or \"savings\".\n    to_account: \"checking\" or \"savings\".\n    amount: Positive amount of money to move.\n\nReturns:\n    {\"status\": \"success\", \"message\", \"checking_balance\", \"savings_balance\"},\n    or {\"status\": \"pending\"/\"error\", \"message\"}.",
+                          "name": "transfer_funds",
+                          "parameters": null,
+                          "parameters_json_schema": {
+                            "properties": {
+                              "from_account": {
+                                "title": "From Account",
+                                "type": "string"
+                              },
+                              "to_account": {
+                                "title": "To Account",
+                                "type": "string"
+                              },
+                              "amount": {
+                                "title": "Amount",
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "from_account",
+                              "to_account",
+                              "amount"
+                            ],
+                            "title": "transfer_fundsParams",
+                            "type": "object"
+                          },
+                          "response": null,
+                          "response_json_schema": null,
+                          "behavior": null
+                        }
+                      ],
+                      "google_search_retrieval": null,
+                      "parallel_ai_search": null,
+                      "url_context": null,
+                      "mcp_servers": null
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "expected_invocation": {
+            "invocation_id": "turn-1-request-transfer",
+            "user_content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "Transfer $500 from my checking to my savings account.",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "user"
+            },
+            "final_response": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "Before I can make that transfer I need to verify your identity. What is the name of your first pet?",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "model"
+            },
+            "intermediate_data": {
+              "tool_uses": [
+                {
+                  "id": null,
+                  "args": {},
+                  "name": "get_security_question",
+                  "partial_args": null,
+                  "will_continue": null
+                }
+              ],
+              "tool_responses": [],
+              "intermediate_responses": []
+            },
+            "creation_timestamp": 0.0,
+            "rubrics": null,
+            "app_details": null
+          },
+          "eval_metric_results": [
+            {
+              "metric_name": "tool_trajectory_avg_score",
+              "threshold": 1.0,
+              "criterion": {
+                "threshold": 1.0,
+                "include_intermediate_responses_in_final": false
+              },
+              "custom_function_path": null,
+              "score": 1.0,
+              "eval_status": 1,
+              "details": {
+                "rubric_scores": null
+              }
+            }
+          ]
+        },
+        {
+          "actual_invocation": {
+            "invocation_id": "e-1f545d49-e78d-4822-be8e-84890aed1041",
+            "user_content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "Rex",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "user"
+            },
+            "final_response": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "Transfer of $500 from checking to savings was successful. Your new checking balance is $1500 and your new savings balance is $5500.",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "model"
+            },
+            "intermediate_data": {
+              "invocation_events": [
+                {
+                  "author": "wealth_management_assistant",
+                  "content": {
+                    "parts": [
+                      {
+                        "media_resolution": null,
+                        "code_execution_result": null,
+                        "executable_code": null,
+                        "file_data": null,
+                        "function_call": {
+                          "id": "adk-6393d296-af68-4a17-ba68-c7840646a676",
+                          "args": {
+                            "answer": "Rex"
+                          },
+                          "name": "verify_security_answer",
+                          "partial_args": null,
+                          "will_continue": null
+                        },
+                        "function_response": null,
+                        "inline_data": null,
+                        "text": null,
+                        "thought": null,
+                        "thought_signature": null,
+                        "video_metadata": null,
+                        "tool_call": null,
+                        "tool_response": null,
+                        "part_metadata": null
+                      }
+                    ],
+                    "role": "model"
+                  }
+                },
+                {
+                  "author": "wealth_management_assistant",
+                  "content": {
+                    "parts": [
+                      {
+                        "media_resolution": null,
+                        "code_execution_result": null,
+                        "executable_code": null,
+                        "file_data": null,
+                        "function_call": null,
+                        "function_response": {
+                          "will_continue": null,
+                          "scheduling": null,
+                          "parts": null,
+                          "id": "adk-6393d296-af68-4a17-ba68-c7840646a676",
+                          "name": "verify_security_answer",
+                          "response": {
+                            "status": "success",
+                            "verified": true,
+                            "locked": false
+                          }
+                        },
+                        "inline_data": null,
+                        "text": null,
+                        "thought": null,
+                        "thought_signature": null,
+                        "video_metadata": null,
+                        "tool_call": null,
+                        "tool_response": null,
+                        "part_metadata": null
+                      }
+                    ],
+                    "role": "user"
+                  }
+                },
+                {
+                  "author": "wealth_management_assistant",
+                  "content": {
+                    "parts": [
+                      {
+                        "media_resolution": null,
+                        "code_execution_result": null,
+                        "executable_code": null,
+                        "file_data": null,
+                        "function_call": {
+                          "id": "adk-1cbfbde6-563e-4a81-b5e3-3b8ab0d94502",
+                          "args": {
+                            "from_account": "checking",
+                            "amount": 500,
+                            "to_account": "savings"
+                          },
+                          "name": "transfer_funds",
+                          "partial_args": null,
+                          "will_continue": null
+                        },
+                        "function_response": null,
+                        "inline_data": null,
+                        "text": null,
+                        "thought": null,
+                        "thought_signature": null,
+                        "video_metadata": null,
+                        "tool_call": null,
+                        "tool_response": null,
+                        "part_metadata": null
+                      }
+                    ],
+                    "role": "model"
+                  }
+                },
+                {
+                  "author": "wealth_management_assistant",
+                  "content": {
+                    "parts": [
+                      {
+                        "media_resolution": null,
+                        "code_execution_result": null,
+                        "executable_code": null,
+                        "file_data": null,
+                        "function_call": null,
+                        "function_response": {
+                          "will_continue": null,
+                          "scheduling": null,
+                          "parts": null,
+                          "id": "adk-1cbfbde6-563e-4a81-b5e3-3b8ab0d94502",
+                          "name": "transfer_funds",
+                          "response": {
+                            "status": "success",
+                            "message": "Transferred 500.00 from checking to savings.",
+                            "checking_balance": 1500.0,
+                            "savings_balance": 5500.0
+                          }
+                        },
+                        "inline_data": null,
+                        "text": null,
+                        "thought": null,
+                        "thought_signature": null,
+                        "video_metadata": null,
+                        "tool_call": null,
+                        "tool_response": null,
+                        "part_metadata": null
+                      }
+                    ],
+                    "role": "user"
+                  }
+                }
+              ]
+            },
+            "creation_timestamp": 1780848061.97506,
+            "rubrics": null,
+            "app_details": {
+              "agent_details": {
+                "wealth_management_assistant": {
+                  "name": "wealth_management_assistant",
+                  "instructions": "\nYou are a digital wealth management assistant for a brokerage platform. You help\nthe signed-in user with their checking and savings accounts.\n\nYou handle two kinds of requests:\n\n1. General queries (for example, \"What is my portfolio balance?\").\n   - Answer these directly. For balances, call `get_portfolio_balance` and report\n     the checking, savings, and total balances clearly.\n\n2. Sensitive actions (for example, \"Transfer $500 from checking to savings\").\n   These ALWAYS require verification first. Follow these steps in order and never\n   skip one:\n     a. Call `get_security_question` and ask the user the exact question returned.\n     b. When the user answers, call `verify_security_answer` with their answer.\n     c. If verified is true, call `transfer_funds` with the source account,\n        destination account, and amount. The user will be asked to confirm the\n        exact transfer; once they confirm, report the result and the new balances.\n     d. If verified is false and locked is false, the answer was wrong but the\n        user may try again. Tell them the answer was incorrect, mention how many\n        attempts remain (attempts_remaining), and ask them to answer the security\n        question again. Do NOT call get_security_question again and do NOT start\n        over — simply call `verify_security_answer` again with their new answer.\n     e. If locked is true, the account is locked due to too many failed attempts.\n        Tell the user the action is denied because the account is locked, and do\n        not continue the verification.\n\nImportant rules:\n- Never reveal the security answer, and never perform a transfer without a\n  successful verification in the current request.\n- Only \"checking\" and \"savings\" accounts exist. Amounts must be positive.\n- Be concise, clear, and professional.\n\n\nYou are an agent. Your internal name is \"wealth_management_assistant\". The description about you is \"Assistant for portfolio queries and verified account transfers.\".",
+                  "tool_declarations": [
+                    {
+                      "retrieval": null,
+                      "computer_use": null,
+                      "file_search": null,
+                      "google_search": null,
+                      "google_maps": null,
+                      "code_execution": null,
+                      "enterprise_web_search": null,
+                      "function_declarations": [
+                        {
+                          "description": "Return the signed-in user's checking and savings balances.\n\nThis is a general, non-sensitive query, so it needs no verification.\n\nReturns:\n    {\"status\": \"success\", \"checking_balance\", \"savings_balance\",\n    \"total_balance\"} or {\"status\": \"error\", \"message\"}.",
+                          "name": "get_portfolio_balance",
+                          "parameters": null,
+                          "parameters_json_schema": null,
+                          "response": null,
+                          "response_json_schema": null,
+                          "behavior": null
+                        },
+                        {
+                          "description": "Retrieve the user's security question and begin verification.\n\nCall this first whenever the user requests a sensitive action (such as a\ntransfer). Then ask the user the returned question and pass their reply to\n`verify_security_answer`.\n\nReturns:\n    {\"status\": \"success\", \"security_question\"} or {\"status\": \"error\",\n    \"message\"} (for example, if the account is locked).",
+                          "name": "get_security_question",
+                          "parameters": null,
+                          "parameters_json_schema": null,
+                          "response": null,
+                          "response_json_schema": null,
+                          "behavior": null
+                        },
+                        {
+                          "description": "Check the user's answer to their security question.\n\nThe result is recorded in the verification state machine. A correct answer\nmakes the session VERIFIED; repeated wrong answers eventually LOCK it.\n\nArgs:\n    answer: The answer the user gave to their security question.\n\nReturns:\n    {\"status\": \"success\", \"verified\": bool, \"locked\": bool}.",
+                          "name": "verify_security_answer",
+                          "parameters": null,
+                          "parameters_json_schema": {
+                            "properties": {
+                              "answer": {
+                                "title": "Answer",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "answer"
+                            ],
+                            "title": "verify_security_answerParams",
+                            "type": "object"
+                          },
+                          "response": null,
+                          "response_json_schema": null,
+                          "behavior": null
+                        },
+                        {
+                          "description": "Transfer money between the signed-in user's accounts (SENSITIVE action).\n\nTwo independent controls protect this tool:\n  1. The security gate (registered on the agent) blocks it unless the\n     session is VERIFIED — this runs before we even get here.\n  2. Human-in-the-loop: we ask the user to explicitly confirm THIS exact\n     transfer before any money moves.\n\nArgs:\n    from_account: \"checking\" or \"savings\".\n    to_account: \"checking\" or \"savings\".\n    amount: Positive amount of money to move.\n\nReturns:\n    {\"status\": \"success\", \"message\", \"checking_balance\", \"savings_balance\"},\n    or {\"status\": \"pending\"/\"error\", \"message\"}.",
+                          "name": "transfer_funds",
+                          "parameters": null,
+                          "parameters_json_schema": {
+                            "properties": {
+                              "from_account": {
+                                "title": "From Account",
+                                "type": "string"
+                              },
+                              "to_account": {
+                                "title": "To Account",
+                                "type": "string"
+                              },
+                              "amount": {
+                                "title": "Amount",
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "from_account",
+                              "to_account",
+                              "amount"
+                            ],
+                            "title": "transfer_fundsParams",
+                            "type": "object"
+                          },
+                          "response": null,
+                          "response_json_schema": null,
+                          "behavior": null
+                        }
+                      ],
+                      "google_search_retrieval": null,
+                      "parallel_ai_search": null,
+                      "url_context": null,
+                      "mcp_servers": null
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "expected_invocation": {
+            "invocation_id": "turn-2-correct-answer",
+            "user_content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "Rex",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "user"
+            },
+            "final_response": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "Your identity is verified. I transferred $500.00 from checking to savings. Your checking balance is now $1500.00 and your savings balance is $5500.00.",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "model"
+            },
+            "intermediate_data": {
+              "tool_uses": [
+                {
+                  "id": null,
+                  "args": {
+                    "answer": "Rex"
+                  },
+                  "name": "verify_security_answer",
+                  "partial_args": null,
+                  "will_continue": null
+                },
+                {
+                  "id": null,
+                  "args": {
+                    "from_account": "checking",
+                    "to_account": "savings",
+                    "amount": 500
+                  },
+                  "name": "transfer_funds",
+                  "partial_args": null,
+                  "will_continue": null
+                }
+              ],
+              "tool_responses": [],
+              "intermediate_responses": []
+            },
+            "creation_timestamp": 0.0,
+            "rubrics": null,
+            "app_details": null
+          },
+          "eval_metric_results": [
+            {
+              "metric_name": "tool_trajectory_avg_score",
+              "threshold": 1.0,
+              "criterion": {
+                "threshold": 1.0,
+                "include_intermediate_responses_in_final": false
+              },
+              "custom_function_path": null,
+              "score": 1.0,
+              "eval_status": 1,
+              "details": {
+                "rubric_scores": null
+              }
+            }
+          ]
+        }
+      ],
+      "session_id": "___eval___session___8af753ca-7c60-4c0b-b3cf-7d64031bed32",
+      "session_details": {
+        "id": "___eval___session___8af753ca-7c60-4c0b-b3cf-7d64031bed32",
+        "app_name": "wealth_agent",
+        "user_id": "user_123",
+        "state": {
+          "user_id": "user_123",
+          "__llm_request_key__": "a23a379e-8f3b-4048-8709-7e42f9aa5cb3",
+          "verification": {
+            "status": "UNVERIFIED",
+            "attempts": 0,
+            "challenged_at": null,
+            "verified_at": null
+          }
+        },
+        "events": [
+          {
+            "model_version": null,
+            "content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "Transfer $500 from my checking to my savings account.",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "user"
+            },
+            "grounding_metadata": null,
+            "partial": null,
+            "turn_complete": null,
+            "turn_complete_reason": null,
+            "finish_reason": null,
+            "error_code": null,
+            "error_message": null,
+            "interrupted": null,
+            "custom_metadata": null,
+            "usage_metadata": null,
+            "live_session_resumption_update": null,
+            "live_session_id": null,
+            "go_away": null,
+            "input_transcription": null,
+            "output_transcription": null,
+            "avg_logprobs": null,
+            "logprobs_result": null,
+            "cache_metadata": null,
+            "citation_metadata": null,
+            "interaction_id": null,
+            "invocation_id": "e-2a857017-f7f5-4097-998c-4e326fe28e99",
+            "author": "user",
+            "actions": {
+              "skip_summarization": null,
+              "state_delta": {},
+              "artifact_delta": {},
+              "transfer_to_agent": null,
+              "escalate": null,
+              "requested_auth_configs": {},
+              "requested_tool_confirmations": {},
+              "compaction": null,
+              "end_of_agent": null,
+              "agent_state": null,
+              "rewind_before_invocation_id": null,
+              "route": null,
+              "render_ui_widgets": null,
+              "set_model_response": null
+            },
+            "output": null,
+            "node_info": {
+              "path": "",
+              "output_for": null,
+              "message_as_output": null
+            },
+            "long_running_tool_ids": null,
+            "branch": null,
+            "isolation_scope": null,
+            "id": "b3d8f4d9-62cf-486b-b44c-fea8685b4729",
+            "timestamp": 1780848059.4803572
+          },
+          {
+            "model_version": "gemini-2.5-flash",
+            "content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": {
+                    "id": "adk-f3917f33-1632-40e9-a027-50951bfa2a1b",
+                    "args": {},
+                    "name": "get_security_question",
+                    "partial_args": null,
+                    "will_continue": null
+                  },
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": null,
+                  "thought": null,
+                  "thought_signature": "Cs4BAQw51sd9Zw_C_9DB2MP4Nzeco4W5lC0bq57J2YdQBV7rYju-f1GUcTwQgqBxDxHspbkElFl9LmXYVKMYixEZ0E8XzBfWH_lNOKkzx3eVR14wWMeB6eCeuYqrYbGeD0GzC9VSw4dlHs_aavlyKVZ2CQS4BH13MFdRIRMd9b0-tGT-ZcHRBhD8St6CgTOIdfPLYTDnSP7MZinZ3gxvEvklSmuUWwW4c8GA-UZt0uDLfA00-yEGTXjLdTrnOBlxbIwR2abisuPzyOnBLPrLy2w=",
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "model"
+            },
+            "grounding_metadata": null,
+            "partial": null,
+            "turn_complete": null,
+            "turn_complete_reason": null,
+            "finish_reason": "STOP",
+            "error_code": null,
+            "error_message": null,
+            "interrupted": null,
+            "custom_metadata": {
+              "__llm_request_key__": "ddb2aa9c-c605-4b79-b936-4ec4eb5cdd9a"
+            },
+            "usage_metadata": {
+              "cache_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 726
+                }
+              ],
+              "cached_content_token_count": 726,
+              "candidates_token_count": 12,
+              "candidates_tokens_details": null,
+              "prompt_token_count": 1009,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 1009
+                }
+              ],
+              "thoughts_token_count": 36,
+              "tool_use_prompt_token_count": null,
+              "tool_use_prompt_tokens_details": null,
+              "total_token_count": 1057,
+              "traffic_type": null
+            },
+            "live_session_resumption_update": null,
+            "live_session_id": null,
+            "go_away": null,
+            "input_transcription": null,
+            "output_transcription": null,
+            "avg_logprobs": null,
+            "logprobs_result": null,
+            "cache_metadata": null,
+            "citation_metadata": null,
+            "interaction_id": null,
+            "invocation_id": "e-2a857017-f7f5-4097-998c-4e326fe28e99",
+            "author": "wealth_management_assistant",
+            "actions": {
+              "skip_summarization": null,
+              "state_delta": {
+                "__llm_request_key__": "ddb2aa9c-c605-4b79-b936-4ec4eb5cdd9a"
+              },
+              "artifact_delta": {},
+              "transfer_to_agent": null,
+              "escalate": null,
+              "requested_auth_configs": {},
+              "requested_tool_confirmations": {},
+              "compaction": null,
+              "end_of_agent": null,
+              "agent_state": null,
+              "rewind_before_invocation_id": null,
+              "route": null,
+              "render_ui_widgets": null,
+              "set_model_response": null
+            },
+            "output": null,
+            "node_info": {
+              "path": "wealth_management_assistant@1",
+              "output_for": null,
+              "message_as_output": null
+            },
+            "long_running_tool_ids": [],
+            "branch": null,
+            "isolation_scope": null,
+            "id": "6b3f920d-23b2-4262-bbbc-36d7ff08860f",
+            "timestamp": 1780848059.486096
+          },
+          {
+            "model_version": null,
+            "content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": {
+                    "will_continue": null,
+                    "scheduling": null,
+                    "parts": null,
+                    "id": "adk-f3917f33-1632-40e9-a027-50951bfa2a1b",
+                    "name": "get_security_question",
+                    "response": {
+                      "status": "success",
+                      "security_question": "What is the name of your first pet?"
+                    }
+                  },
+                  "inline_data": null,
+                  "text": null,
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "user"
+            },
+            "grounding_metadata": null,
+            "partial": null,
+            "turn_complete": null,
+            "turn_complete_reason": null,
+            "finish_reason": null,
+            "error_code": null,
+            "error_message": null,
+            "interrupted": null,
+            "custom_metadata": null,
+            "usage_metadata": null,
+            "live_session_resumption_update": null,
+            "live_session_id": null,
+            "go_away": null,
+            "input_transcription": null,
+            "output_transcription": null,
+            "avg_logprobs": null,
+            "logprobs_result": null,
+            "cache_metadata": null,
+            "citation_metadata": null,
+            "interaction_id": null,
+            "invocation_id": "e-2a857017-f7f5-4097-998c-4e326fe28e99",
+            "author": "wealth_management_assistant",
+            "actions": {
+              "skip_summarization": null,
+              "state_delta": {
+                "verification": {
+                  "status": "CHALLENGED",
+                  "attempts": 0,
+                  "challenged_at": 1780848060.538086,
+                  "verified_at": null
+                }
+              },
+              "artifact_delta": {},
+              "transfer_to_agent": null,
+              "escalate": null,
+              "requested_auth_configs": {},
+              "requested_tool_confirmations": {},
+              "compaction": null,
+              "end_of_agent": null,
+              "agent_state": null,
+              "rewind_before_invocation_id": null,
+              "route": null,
+              "render_ui_widgets": null,
+              "set_model_response": null
+            },
+            "output": null,
+            "node_info": {
+              "path": "wealth_management_assistant@1",
+              "output_for": null,
+              "message_as_output": null
+            },
+            "long_running_tool_ids": null,
+            "branch": null,
+            "isolation_scope": null,
+            "id": "02854746-39d4-4c54-b7c8-8ab2695450bf",
+            "timestamp": 1780848060.53834
+          },
+          {
+            "model_version": "gemini-2.5-flash",
+            "content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "What is the name of your first pet?",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "model"
+            },
+            "grounding_metadata": null,
+            "partial": null,
+            "turn_complete": null,
+            "turn_complete_reason": null,
+            "finish_reason": "STOP",
+            "error_code": null,
+            "error_message": null,
+            "interrupted": null,
+            "custom_metadata": {
+              "__llm_request_key__": "c6d8711c-7192-401c-a3a0-d6e44f6febda"
+            },
+            "usage_metadata": {
+              "cache_tokens_details": null,
+              "cached_content_token_count": null,
+              "candidates_token_count": 9,
+              "candidates_tokens_details": null,
+              "prompt_token_count": 1053,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 1053
+                }
+              ],
+              "thoughts_token_count": null,
+              "tool_use_prompt_token_count": null,
+              "tool_use_prompt_tokens_details": null,
+              "total_token_count": 1062,
+              "traffic_type": null
+            },
+            "live_session_resumption_update": null,
+            "live_session_id": null,
+            "go_away": null,
+            "input_transcription": null,
+            "output_transcription": null,
+            "avg_logprobs": null,
+            "logprobs_result": null,
+            "cache_metadata": null,
+            "citation_metadata": null,
+            "interaction_id": null,
+            "invocation_id": "e-2a857017-f7f5-4097-998c-4e326fe28e99",
+            "author": "wealth_management_assistant",
+            "actions": {
+              "skip_summarization": null,
+              "state_delta": {
+                "__llm_request_key__": "c6d8711c-7192-401c-a3a0-d6e44f6febda"
+              },
+              "artifact_delta": {},
+              "transfer_to_agent": null,
+              "escalate": null,
+              "requested_auth_configs": {},
+              "requested_tool_confirmations": {},
+              "compaction": null,
+              "end_of_agent": null,
+              "agent_state": null,
+              "rewind_before_invocation_id": null,
+              "route": null,
+              "render_ui_widgets": null,
+              "set_model_response": null
+            },
+            "output": null,
+            "node_info": {
+              "path": "wealth_management_assistant@1",
+              "output_for": null,
+              "message_as_output": null
+            },
+            "long_running_tool_ids": null,
+            "branch": null,
+            "isolation_scope": null,
+            "id": "ae91f1fc-6d58-4fb7-a681-0f778ae1ef98",
+            "timestamp": 1780848060.549091
+          },
+          {
+            "model_version": null,
+            "content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "Rex",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "user"
+            },
+            "grounding_metadata": null,
+            "partial": null,
+            "turn_complete": null,
+            "turn_complete_reason": null,
+            "finish_reason": null,
+            "error_code": null,
+            "error_message": null,
+            "interrupted": null,
+            "custom_metadata": null,
+            "usage_metadata": null,
+            "live_session_resumption_update": null,
+            "live_session_id": null,
+            "go_away": null,
+            "input_transcription": null,
+            "output_transcription": null,
+            "avg_logprobs": null,
+            "logprobs_result": null,
+            "cache_metadata": null,
+            "citation_metadata": null,
+            "interaction_id": null,
+            "invocation_id": "e-1f545d49-e78d-4822-be8e-84890aed1041",
+            "author": "user",
+            "actions": {
+              "skip_summarization": null,
+              "state_delta": {},
+              "artifact_delta": {},
+              "transfer_to_agent": null,
+              "escalate": null,
+              "requested_auth_configs": {},
+              "requested_tool_confirmations": {},
+              "compaction": null,
+              "end_of_agent": null,
+              "agent_state": null,
+              "rewind_before_invocation_id": null,
+              "route": null,
+              "render_ui_widgets": null,
+              "set_model_response": null
+            },
+            "output": null,
+            "node_info": {
+              "path": "",
+              "output_for": null,
+              "message_as_output": null
+            },
+            "long_running_tool_ids": null,
+            "branch": null,
+            "isolation_scope": null,
+            "id": "ce0522ed-563f-488e-a3c4-bb847ef3171b",
+            "timestamp": 1780848061.2776058
+          },
+          {
+            "model_version": "gemini-2.5-flash",
+            "content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": {
+                    "id": "adk-6393d296-af68-4a17-ba68-c7840646a676",
+                    "args": {
+                      "answer": "Rex"
+                    },
+                    "name": "verify_security_answer",
+                    "partial_args": null,
+                    "will_continue": null
+                  },
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": null,
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "model"
+            },
+            "grounding_metadata": null,
+            "partial": null,
+            "turn_complete": null,
+            "turn_complete_reason": null,
+            "finish_reason": "STOP",
+            "error_code": null,
+            "error_message": null,
+            "interrupted": null,
+            "custom_metadata": {
+              "__llm_request_key__": "0f4f79c4-132f-4359-8010-1dd4fbd59b8f"
+            },
+            "usage_metadata": {
+              "cache_tokens_details": null,
+              "cached_content_token_count": null,
+              "candidates_token_count": 17,
+              "candidates_tokens_details": null,
+              "prompt_token_count": 1065,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 1065
+                }
+              ],
+              "thoughts_token_count": null,
+              "tool_use_prompt_token_count": null,
+              "tool_use_prompt_tokens_details": null,
+              "total_token_count": 1082,
+              "traffic_type": null
+            },
+            "live_session_resumption_update": null,
+            "live_session_id": null,
+            "go_away": null,
+            "input_transcription": null,
+            "output_transcription": null,
+            "avg_logprobs": null,
+            "logprobs_result": null,
+            "cache_metadata": null,
+            "citation_metadata": null,
+            "interaction_id": null,
+            "invocation_id": "e-1f545d49-e78d-4822-be8e-84890aed1041",
+            "author": "wealth_management_assistant",
+            "actions": {
+              "skip_summarization": null,
+              "state_delta": {
+                "__llm_request_key__": "0f4f79c4-132f-4359-8010-1dd4fbd59b8f"
+              },
+              "artifact_delta": {},
+              "transfer_to_agent": null,
+              "escalate": null,
+              "requested_auth_configs": {},
+              "requested_tool_confirmations": {},
+              "compaction": null,
+              "end_of_agent": null,
+              "agent_state": null,
+              "rewind_before_invocation_id": null,
+              "route": null,
+              "render_ui_widgets": null,
+              "set_model_response": null
+            },
+            "output": null,
+            "node_info": {
+              "path": "wealth_management_assistant@1",
+              "output_for": null,
+              "message_as_output": null
+            },
+            "long_running_tool_ids": [],
+            "branch": null,
+            "isolation_scope": null,
+            "id": "a0bffbf0-68f9-44c1-bd56-9347b236c878",
+            "timestamp": 1780848061.285632
+          },
+          {
+            "model_version": null,
+            "content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": {
+                    "will_continue": null,
+                    "scheduling": null,
+                    "parts": null,
+                    "id": "adk-6393d296-af68-4a17-ba68-c7840646a676",
+                    "name": "verify_security_answer",
+                    "response": {
+                      "status": "success",
+                      "verified": true,
+                      "locked": false
+                    }
+                  },
+                  "inline_data": null,
+                  "text": null,
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "user"
+            },
+            "grounding_metadata": null,
+            "partial": null,
+            "turn_complete": null,
+            "turn_complete_reason": null,
+            "finish_reason": null,
+            "error_code": null,
+            "error_message": null,
+            "interrupted": null,
+            "custom_metadata": null,
+            "usage_metadata": null,
+            "live_session_resumption_update": null,
+            "live_session_id": null,
+            "go_away": null,
+            "input_transcription": null,
+            "output_transcription": null,
+            "avg_logprobs": null,
+            "logprobs_result": null,
+            "cache_metadata": null,
+            "citation_metadata": null,
+            "interaction_id": null,
+            "invocation_id": "e-1f545d49-e78d-4822-be8e-84890aed1041",
+            "author": "wealth_management_assistant",
+            "actions": {
+              "skip_summarization": null,
+              "state_delta": {
+                "verification": {
+                  "status": "VERIFIED",
+                  "attempts": 0,
+                  "challenged_at": 1780848060.538086,
+                  "verified_at": 1780848061.976346
+                }
+              },
+              "artifact_delta": {},
+              "transfer_to_agent": null,
+              "escalate": null,
+              "requested_auth_configs": {},
+              "requested_tool_confirmations": {},
+              "compaction": null,
+              "end_of_agent": null,
+              "agent_state": null,
+              "rewind_before_invocation_id": null,
+              "route": null,
+              "render_ui_widgets": null,
+              "set_model_response": null
+            },
+            "output": null,
+            "node_info": {
+              "path": "wealth_management_assistant@1",
+              "output_for": null,
+              "message_as_output": null
+            },
+            "long_running_tool_ids": null,
+            "branch": null,
+            "isolation_scope": null,
+            "id": "cd1baa8f-f011-41fb-8d19-ad4685bde8ca",
+            "timestamp": 1780848061.9765
+          },
+          {
+            "model_version": "gemini-2.5-flash",
+            "content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": {
+                    "id": "adk-1cbfbde6-563e-4a81-b5e3-3b8ab0d94502",
+                    "args": {
+                      "from_account": "checking",
+                      "amount": 500,
+                      "to_account": "savings"
+                    },
+                    "name": "transfer_funds",
+                    "partial_args": null,
+                    "will_continue": null
+                  },
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": null,
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "model"
+            },
+            "grounding_metadata": null,
+            "partial": null,
+            "turn_complete": null,
+            "turn_complete_reason": null,
+            "finish_reason": "STOP",
+            "error_code": null,
+            "error_message": null,
+            "interrupted": null,
+            "custom_metadata": {
+              "__llm_request_key__": "896492ea-8b05-4633-b0b6-8df9ab1371c5"
+            },
+            "usage_metadata": {
+              "cache_tokens_details": null,
+              "cached_content_token_count": null,
+              "candidates_token_count": 31,
+              "candidates_tokens_details": null,
+              "prompt_token_count": 1109,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 1109
+                }
+              ],
+              "thoughts_token_count": 101,
+              "tool_use_prompt_token_count": null,
+              "tool_use_prompt_tokens_details": null,
+              "total_token_count": 1241,
+              "traffic_type": null
+            },
+            "live_session_resumption_update": null,
+            "live_session_id": null,
+            "go_away": null,
+            "input_transcription": null,
+            "output_transcription": null,
+            "avg_logprobs": null,
+            "logprobs_result": null,
+            "cache_metadata": null,
+            "citation_metadata": null,
+            "interaction_id": null,
+            "invocation_id": "e-1f545d49-e78d-4822-be8e-84890aed1041",
+            "author": "wealth_management_assistant",
+            "actions": {
+              "skip_summarization": null,
+              "state_delta": {
+                "__llm_request_key__": "896492ea-8b05-4633-b0b6-8df9ab1371c5"
+              },
+              "artifact_delta": {},
+              "transfer_to_agent": null,
+              "escalate": null,
+              "requested_auth_configs": {},
+              "requested_tool_confirmations": {},
+              "compaction": null,
+              "end_of_agent": null,
+              "agent_state": null,
+              "rewind_before_invocation_id": null,
+              "route": null,
+              "render_ui_widgets": null,
+              "set_model_response": null
+            },
+            "output": null,
+            "node_info": {
+              "path": "wealth_management_assistant@1",
+              "output_for": null,
+              "message_as_output": null
+            },
+            "long_running_tool_ids": [],
+            "branch": null,
+            "isolation_scope": null,
+            "id": "8531607f-2f17-42a7-a0a0-bd77796d30ba",
+            "timestamp": 1780848061.983711
+          },
+          {
+            "model_version": null,
+            "content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": {
+                    "will_continue": null,
+                    "scheduling": null,
+                    "parts": null,
+                    "id": "adk-1cbfbde6-563e-4a81-b5e3-3b8ab0d94502",
+                    "name": "transfer_funds",
+                    "response": {
+                      "status": "success",
+                      "message": "Transferred 500.00 from checking to savings.",
+                      "checking_balance": 1500.0,
+                      "savings_balance": 5500.0
+                    }
+                  },
+                  "inline_data": null,
+                  "text": null,
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "user"
+            },
+            "grounding_metadata": null,
+            "partial": null,
+            "turn_complete": null,
+            "turn_complete_reason": null,
+            "finish_reason": null,
+            "error_code": null,
+            "error_message": null,
+            "interrupted": null,
+            "custom_metadata": null,
+            "usage_metadata": null,
+            "live_session_resumption_update": null,
+            "live_session_id": null,
+            "go_away": null,
+            "input_transcription": null,
+            "output_transcription": null,
+            "avg_logprobs": null,
+            "logprobs_result": null,
+            "cache_metadata": null,
+            "citation_metadata": null,
+            "interaction_id": null,
+            "invocation_id": "e-1f545d49-e78d-4822-be8e-84890aed1041",
+            "author": "wealth_management_assistant",
+            "actions": {
+              "skip_summarization": null,
+              "state_delta": {
+                "verification": {
+                  "status": "UNVERIFIED",
+                  "attempts": 0,
+                  "challenged_at": null,
+                  "verified_at": null
+                }
+              },
+              "artifact_delta": {},
+              "transfer_to_agent": null,
+              "escalate": null,
+              "requested_auth_configs": {},
+              "requested_tool_confirmations": {},
+              "compaction": null,
+              "end_of_agent": null,
+              "agent_state": null,
+              "rewind_before_invocation_id": null,
+              "route": null,
+              "render_ui_widgets": null,
+              "set_model_response": null
+            },
+            "output": null,
+            "node_info": {
+              "path": "wealth_management_assistant@1",
+              "output_for": null,
+              "message_as_output": null
+            },
+            "long_running_tool_ids": null,
+            "branch": null,
+            "isolation_scope": null,
+            "id": "f7670114-a639-486b-a40c-15f3cac76a68",
+            "timestamp": 1780848063.780353
+          },
+          {
+            "model_version": "gemini-2.5-flash",
+            "content": {
+              "parts": [
+                {
+                  "media_resolution": null,
+                  "code_execution_result": null,
+                  "executable_code": null,
+                  "file_data": null,
+                  "function_call": null,
+                  "function_response": null,
+                  "inline_data": null,
+                  "text": "Transfer of $500 from checking to savings was successful. Your new checking balance is $1500 and your new savings balance is $5500.",
+                  "thought": null,
+                  "thought_signature": null,
+                  "video_metadata": null,
+                  "tool_call": null,
+                  "tool_response": null,
+                  "part_metadata": null
+                }
+              ],
+              "role": "model"
+            },
+            "grounding_metadata": null,
+            "partial": null,
+            "turn_complete": null,
+            "turn_complete_reason": null,
+            "finish_reason": "STOP",
+            "error_code": null,
+            "error_message": null,
+            "interrupted": null,
+            "custom_metadata": {
+              "__llm_request_key__": "a23a379e-8f3b-4048-8709-7e42f9aa5cb3"
+            },
+            "usage_metadata": {
+              "cache_tokens_details": null,
+              "cached_content_token_count": null,
+              "candidates_token_count": 35,
+              "candidates_tokens_details": null,
+              "prompt_token_count": 1195,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 1195
+                }
+              ],
+              "thoughts_token_count": null,
+              "tool_use_prompt_token_count": null,
+              "tool_use_prompt_tokens_details": null,
+              "total_token_count": 1230,
+              "traffic_type": null
+            },
+            "live_session_resumption_update": null,
+            "live_session_id": null,
+            "go_away": null,
+            "input_transcription": null,
+            "output_transcription": null,
+            "avg_logprobs": null,
+            "logprobs_result": null,
+            "cache_metadata": null,
+            "citation_metadata": null,
+            "interaction_id": null,
+            "invocation_id": "e-1f545d49-e78d-4822-be8e-84890aed1041",
+            "author": "wealth_management_assistant",
+            "actions": {
+              "skip_summarization": null,
+              "state_delta": {
+                "__llm_request_key__": "a23a379e-8f3b-4048-8709-7e42f9aa5cb3"
+              },
+              "artifact_delta": {},
+              "transfer_to_agent": null,
+              "escalate": null,
+              "requested_auth_configs": {},
+              "requested_tool_confirmations": {},
+              "compaction": null,
+              "end_of_agent": null,
+              "agent_state": null,
+              "rewind_before_invocation_id": null,
+              "route": null,
+              "render_ui_widgets": null,
+              "set_model_response": null
+            },
+            "output": null,
+            "node_info": {
+              "path": "wealth_management_assistant@1",
+              "output_for": null,
+              "message_as_output": null
+            },
+            "long_running_tool_ids": null,
+            "branch": null,
+            "isolation_scope": null,
+            "id": "c0815b6c-75fd-4055-b20f-25934b21eb1f",
+            "timestamp": 1780848063.788606
+          }
+        ],
+        "last_update_time": 1780848063.788606
+      },
+      "user_id": "user_123"
+    }
+  ],
+  "creation_timestamp": 1780848064.574979
+}

@@ -11,3 +11,4 @@ opentelemetry-exporter-otlp==1.41.1
 # Testing
 pytest==9.0.3
 pytest-asyncio==1.4.0
+pytest-cov==7.0.0

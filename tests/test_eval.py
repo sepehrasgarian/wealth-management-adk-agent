@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 from google.adk.evaluation.agent_evaluator import AgentEvaluator
 
-from wealth_agent import database
+from wealth_agent import config, database
 
 # Directory holding the .evalset.json files and test_config.json.
 EVAL_DIR = Path(__file__).parent.parent / "eval"
@@ -30,9 +30,16 @@ AGENT_MODULE = "wealth_agent"
 
 
 @pytest.fixture(autouse=True)
-def reset_database():
-    """Start every test from the seeded balances so transfers are repeatable."""
+def deterministic_eval_environment(monkeypatch):
+    """Make each eval run from a known, deterministic starting point.
+
+    * Reset the database so transfers always start from the seeded balances.
+    * Disable the human-in-the-loop confirmation: a trajectory eval cannot click
+      "confirm", so we let the transfer complete directly. The confirmation flow
+      itself is covered by the deterministic unit tests in test_tools.py.
+    """
     database.init_db(reset=True)
+    monkeypatch.setattr(config, "REQUIRE_TRANSFER_CONFIRMATION", False)
 
 
 @pytest.mark.asyncio

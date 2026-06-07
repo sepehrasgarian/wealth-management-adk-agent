@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from google.adk.tools.tool_context import ToolContext
 
-from . import security, services
+from . import config, security, services
 from .database import DEMO_USER_ID
 
 # Session-state key holding the authenticated user id.
@@ -102,7 +102,12 @@ def verify_security_answer(answer: str, tool_context: ToolContext) -> dict:
         tool_context,
         user_id=user_id,
     )
-    return {"status": "success", "verified": False, "locked": is_locked}
+    return {
+        "status": "success",
+        "verified": False,
+        "locked": is_locked,
+        "attempts_remaining": security.attempts_remaining(tool_context.state),
+    }
 
 
 def transfer_funds(
@@ -129,18 +134,21 @@ def transfer_funds(
         or {"status": "pending"/"error", "message"}.
     """
     # --- Human-in-the-loop confirmation of the exact transfer ---
-    confirmation = tool_context.tool_confirmation
-    if confirmation is None:
-        # First call: pause and ask the human to approve this specific transfer.
-        tool_context.request_confirmation(
-            hint=f"Please confirm: transfer {amount:.2f} from {from_account} to {to_account}."
-        )
-        return {"status": "pending", "message": "Awaiting your confirmation of this transfer."}
+    # Can be disabled via config for deterministic trajectory evals; it is always
+    # on for real use and the adk web demo (see config.REQUIRE_TRANSFER_CONFIRMATION).
+    if config.REQUIRE_TRANSFER_CONFIRMATION:
+        confirmation = tool_context.tool_confirmation
+        if confirmation is None:
+            # First call: pause and ask the human to approve this specific transfer.
+            tool_context.request_confirmation(
+                hint=f"Please confirm: transfer {amount:.2f} from {from_account} to {to_account}."
+            )
+            return {"status": "pending", "message": "Awaiting your confirmation of this transfer."}
 
-    if not confirmation.confirmed:
-        # The human declined the confirmation.
-        security.log_security_event("transfer_declined_by_user", tool_context)
-        return {"status": "error", "message": "Transfer cancelled: you declined the confirmation."}
+        if not confirmation.confirmed:
+            # The human declined the confirmation.
+            security.log_security_event("transfer_declined_by_user", tool_context)
+            return {"status": "error", "message": "Transfer cancelled: you declined the confirmation."}
 
     # --- Confirmed: perform the transfer through the service layer ---
     user_id = _current_user_id(tool_context)

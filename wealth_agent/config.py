@@ -61,7 +61,9 @@ def env_bool(name: str, default: bool) -> bool:
 MODEL = env("WEALTH_MODEL", "gemini-2.5-flash")
 
 # A Gemini "Live" model used only for the optional voice demo (run via adk web).
-LIVE_MODEL = env("WEALTH_LIVE_MODEL", "gemini-2.0-flash-live-001")
+# Must support the Live API (bidiGenerateContent). To enable voice, set
+# WEALTH_MODEL to this value (or another Live model) and restart `adk web`.
+LIVE_MODEL = env("WEALTH_LIVE_MODEL", "gemini-2.5-flash-native-audio-latest")
 
 
 # ---------------------------------------------------------------------------
@@ -77,6 +79,13 @@ MAX_FAILED_ATTEMPTS = env_int("WEALTH_MAX_FAILED_ATTEMPTS", 3)
 # Tool names that move money / take sensitive action and therefore require a
 # verified session. The security gate protects every tool listed here.
 SENSITIVE_TOOLS = {"transfer_funds"}
+
+# Whether transfers require an explicit human-in-the-loop confirmation before the
+# money moves. On by default for real use and the adk web demo. It is turned OFF
+# only for trajectory evals (which cannot simulate a human clicking "confirm"),
+# so those tests run deterministically; the confirmation logic is covered
+# separately by unit tests.
+REQUIRE_TRANSFER_CONFIRMATION = env_bool("WEALTH_REQUIRE_TRANSFER_CONFIRMATION", True)
 
 
 # ---------------------------------------------------------------------------
