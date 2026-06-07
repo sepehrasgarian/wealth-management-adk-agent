@@ -84,9 +84,22 @@ attributed correctly.
 
 ## What we deliberately never log
 
-Security answers, full account balances, and any PII. Spans and logs are scrubbed
-of these before export. This is enforced by emitting only an explicit allow-list
-of fields in `log_security_event`.
+Security answers, full account balances, and any PII. This is enforced by:
+
+- **Allow-list logging** — `log_security_event` only emits explicit, named fields
+  (event type, user_id, amount/accounts for a completed transfer), never the
+  security answer or raw balances.
+- **PII redaction before the model** — `redaction.py` (a `before_model_callback`)
+  masks card numbers, SSNs, and long digit runs in user input before it reaches
+  the model or the trace.
+- **Data minimization** — in production, secrets are collected out of band so
+  they never enter the prompt or the trace at all (the LLM only sees a verified
+  boolean).
+
+Audited security events include: `verification_failed`, `verification_locked`,
+`unauthorized_transfer_attempt`, `transfer_declined_by_user`, and
+`transfer_completed` (the successful sensitive action, for a complete audit
+trail).
 
 ## Production hardening (beyond the prototype)
 

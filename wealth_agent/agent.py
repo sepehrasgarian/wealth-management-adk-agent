@@ -18,13 +18,17 @@ from __future__ import annotations
 
 from google.adk.agents import Agent
 
-from . import config, security
+from . import config, observability, redaction, security
 from .tools import (
     get_portfolio_balance,
     get_security_question,
     transfer_funds,
     verify_security_answer,
 )
+
+# Configure logging and (if WEALTH_TRACING_ENABLED) export OpenTelemetry traces
+# to the configured OTLP backend (e.g. Langfuse) before the agent runs.
+observability.setup_observability()
 
 INSTRUCTION = """
 You are a digital wealth management assistant for a brokerage platform. You help
@@ -75,4 +79,7 @@ root_agent = Agent(
     # The security gate runs before every tool call and blocks sensitive tools
     # unless the session is verified. This is the authoritative enforcement.
     before_tool_callback=security.security_gate,
+    # PII guardrail: mask card numbers / SSNs / long digit runs in user input
+    # before it reaches the model (defense in depth; see redaction.py).
+    before_model_callback=redaction.redact_pii_before_model,
 )

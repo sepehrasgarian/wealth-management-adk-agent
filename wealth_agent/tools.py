@@ -160,6 +160,16 @@ def transfer_funds(
     # Verification is single-use: clear it so the next transfer must re-verify.
     security.consume(tool_context.state)
 
+    # Audit the completed sensitive action (amount + accounts only — no secrets).
+    security.log_security_event(
+        "transfer_completed",
+        tool_context,
+        user_id=user_id,
+        from_account=from_account,
+        to_account=to_account,
+        amount=amount,
+    )
+
     return {
         "status": "success",
         "message": f"Transferred {amount:.2f} from {from_account} to {to_account}.",

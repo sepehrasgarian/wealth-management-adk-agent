@@ -95,6 +95,11 @@ def execute_transfer(
     from_column = f"{from_account}_balance"
     to_column = f"{to_account}_balance"
 
+    # NOTE (mock simplification): the balance check and the update below are not
+    # wrapped in a locked transaction, so they are not safe against concurrent
+    # transfers for the same user. A production system would do the debit/credit
+    # in a single atomic, row-locked transaction (e.g. SELECT ... FOR UPDATE).
+
     with get_connection() as connection:
         row = connection.execute(
             "SELECT checking_balance, savings_balance FROM accounts WHERE user_id = ?",

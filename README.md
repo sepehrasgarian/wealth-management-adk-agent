@@ -174,6 +174,25 @@ as structured logs and attached to the trace. Full design:
 
 ---
 
+## Sensitive data handling
+
+A financial assistant must be careful about what reaches the LLM, the model
+provider, and the traces. This project applies layered data protection:
+
+1. **Data minimization (the primary control).** Secrets should be collected and
+   verified **out of band** so they never enter the LLM conversation at all — the
+   agent decides *that* verification is needed, but a deterministic component
+   handles the actual secret and returns only `verified: true/false`.
+   *In this prototype the security answer is typed into the chat (so it does
+   reach the model); the out-of-band flow is the documented production design.*
+2. **PII redaction guardrail.** `redaction.py` (wired as `before_model_callback`)
+   masks card numbers, SSNs, and long account/PIN digit runs in user input
+   **before** it reaches the model or the trace — catching accidental PII.
+3. **Never log secrets.** Audit events use an allow-list of fields; the security
+   answer and full balances are never logged (see `security.log_security_event`).
+4. **Hash at rest.** In production the security answer would be a salted hash, not
+   plain text (a flagged mock simplification).
+
 ## Voice (bonus)
 
 The same agent runs over voice using a Gemini native-audio Live model — no code
