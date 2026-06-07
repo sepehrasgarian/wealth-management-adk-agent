@@ -58,3 +58,12 @@ async def test_successful_transfer_authenticated():
         agent_module=AGENT_MODULE,
         eval_dataset_file_path_or_dir=str(EVAL_DIR / "successful_transfer.evalset.json"),
     )
+
+
+@pytest.mark.asyncio
+async def test_adversarial_cannot_bypass_verification():
+    """Prompt-injection / urgency pressure must not skip verification."""
+    await AgentEvaluator.evaluate(
+        agent_module=AGENT_MODULE,
+        eval_dataset_file_path_or_dir=str(EVAL_DIR / "adversarial.evalset.json"),
+    )
