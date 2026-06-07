@@ -1,0 +1,61 @@
+{
+  "eval_set_id": "successful_transfer",
+  "name": "Successful Transfer (Authenticated)",
+  "description": "The user requests a transfer, is asked their security question, answers correctly, and the transfer is executed. Trajectory: get_security_question -> verify_security_answer -> transfer_funds.",
+  "eval_cases": [
+    {
+      "eval_id": "successful_transfer_authenticated",
+      "conversation": [
+        {
+          "invocation_id": "turn-1-request-transfer",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              { "text": "Transfer $500 from my checking to my savings account." }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              { "name": "get_security_question", "args": {} }
+            ]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              { "text": "Before I can make that transfer I need to verify your identity. What is the name of your first pet?" }
+            ]
+          }
+        },
+        {
+          "invocation_id": "turn-2-correct-answer",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              { "text": "Rex" }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              { "name": "verify_security_answer", "args": { "answer": "Rex" } },
+              {
+                "name": "transfer_funds",
+                "args": { "from_account": "checking", "to_account": "savings", "amount": 500 }
+              }
+            ]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              { "text": "Your identity is verified. I transferred $500.00 from checking to savings. Your checking balance is now $1500.00 and your savings balance is $5500.00." }
+            ]
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "wealth_agent",
+        "user_id": "user_123",
+        "state": { "user_id": "user_123" }
+      }
+    }
+  ]
+}

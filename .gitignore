@@ -1,0 +1,19 @@
+# Secrets — never commit real API keys
+wealth_agent/.env
+.env
+
+# Private assignment brief — must NOT be shared publicly
+*.pdf
+analysis-2025-04-27.pdf
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Local SQLite database (auto-generated and seeded on first run)
+wealth_agent/wealth.db
+
+# OS noise
+.DS_Store

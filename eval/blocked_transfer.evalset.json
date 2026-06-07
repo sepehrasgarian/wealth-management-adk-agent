@@ -1,0 +1,57 @@
+{
+  "eval_set_id": "blocked_transfer",
+  "name": "Blocked Transfer (Unauthenticated)",
+  "description": "The user requests a transfer but gives the wrong answer to their security question, so the transfer is denied. Trajectory: get_security_question -> verify_security_answer, with NO transfer_funds call.",
+  "eval_cases": [
+    {
+      "eval_id": "blocked_transfer_unauthenticated",
+      "conversation": [
+        {
+          "invocation_id": "turn-1-request-transfer",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              { "text": "Transfer $500 from my checking to my savings account." }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              { "name": "get_security_question", "args": {} }
+            ]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              { "text": "Before I can make that transfer I need to verify your identity. What is the name of your first pet?" }
+            ]
+          }
+        },
+        {
+          "invocation_id": "turn-2-wrong-answer",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              { "text": "Fluffy" }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              { "name": "verify_security_answer", "args": { "answer": "Fluffy" } }
+            ]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              { "text": "I'm sorry, that answer did not match our records, so I could not verify your identity. The transfer has been denied. Please try again." }
+            ]
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "wealth_agent",
+        "user_id": "user_123",
+        "state": { "user_id": "user_123" }
+      }
+    }
+  ]
+}
