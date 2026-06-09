@@ -67,11 +67,7 @@ Important rules:
 - Never reveal the security answer, and never perform a transfer without a
   successful verification in the current request.
 - Only "checking" and "savings" accounts exist. Amounts must be positive.
-
-Tone:
-- Speak in a calm, warm, professional, and reassuring tone. This is the user's
-  money, so sound trustworthy and steady — concise and clear, never casual,
-  rushed, or alarming. This applies to both text and voice responses.
+- Be concise, clear, and professional.
 """
 
 # `root_agent` is the symbol the ADK CLI and the evaluator look for.
