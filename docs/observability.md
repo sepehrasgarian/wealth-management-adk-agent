@@ -23,6 +23,16 @@ points for free:
 A correlation id (`session_id` / `invocation_id`) is attached to every log,
 metric, and span so one user interaction can be reconstructed end to end.
 
+**What is implemented in this prototype (a thin but real slice):**
+
+- **Structured logs** are written to the console **and an append-only log file**
+  (`config.LOG_FILE`) — tool activity and security audit events, secrets masked.
+- **Session & user classification in Langfuse** — `after_tool_callback` tags each
+  span with `langfuse.session.id` (so all turns of a conversation group into one
+  **session**) and `langfuse.user.id` (so traces can be **filtered per user**, e.g.
+  `user_123` vs `user_456`). This is how you isolate a single run or audit one
+  user's activity in the dashboard.
+
 ---
 
 ## 1. Security monitoring

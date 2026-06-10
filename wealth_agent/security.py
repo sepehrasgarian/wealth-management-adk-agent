@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import logging
 import time
+from enum import Enum
 from typing import Any, Optional
 
 from google.adk.tools.base_tool import BaseTool
@@ -39,10 +40,19 @@ logger = logging.getLogger("wealth_agent.security")
 # they live here next to the machine rather than in config.py.
 # ---------------------------------------------------------------------------
 
-UNVERIFIED = "UNVERIFIED"  # default: door locked
-CHALLENGED = "CHALLENGED"  # we asked the security question, waiting for an answer
-VERIFIED = "VERIFIED"      # correct answer given: door open (briefly, single-use)
-LOCKED = "LOCKED"          # too many wrong answers: blocked, raise an alert
+class VerificationState(str, Enum):
+    """The states of the verification state machine.
+
+    A *str* Enum, so each value still serializes to a plain string in JSON
+    session state (e.g. "VERIFIED") and compares equal to that string after a
+    round-trip — while giving us a single, typo-proof namespace for the states.
+    """
+
+    UNVERIFIED = "UNVERIFIED"  # default: door locked
+    CHALLENGED = "CHALLENGED"  # asked the security question(s), waiting for an answer
+    VERIFIED = "VERIFIED"      # all answers correct: door open (briefly, single-use)
+    LOCKED = "LOCKED"          # too many wrong answers: blocked, raise an alert
+
 
 # The key under which the verification state machine is stored in session state.
 STATE_KEY = "verification"
@@ -54,29 +64,25 @@ def _now() -> float:
     return time.time()
 
 
-# ---------------------------------------------------------------------------
-# The verification state machine.
-#
-# `session_state` below is ADK's session state (a dict-like object). Only the
-# functions in this section are allowed to read or change the verification
-# object, so the rules stay in one place.
-# ---------------------------------------------------------------------------
-
 def _new_state() -> dict:
-    """Return a fresh, fully-unverified state object."""
+    """Return a fresh, fully-unverified state object.
+
+    `question_index` tracks how many of the user's security questions have been
+    answered correctly so far; `total_questions` is how many must be answered to
+    become VERIFIED. 
+    """
     return {
-        "status": UNVERIFIED,
+        "status": VerificationState.UNVERIFIED,
         "attempts": 0,
         "challenged_at": None,
         "verified_at": None,
+        "question_index": 0,
+        "total_questions": 0,
     }
 
 
 def get_state(session_state) -> dict:
     """Read the current verification object, defaulting to UNVERIFIED.
-
-    This never mutates session state; it just gives callers something safe to
-    read. Functions that change state write back explicitly with `_save`.
     """
     return session_state.get(STATE_KEY) or _new_state()
 
@@ -86,46 +92,64 @@ def _save(session_state, verification: dict) -> None:
     session_state[STATE_KEY] = verification
 
 
-def start_challenge(session_state) -> str:
+def start_challenge(session_state, total_questions: int) -> str:
     """Begin verification: move UNVERIFIED -> CHALLENGED.
 
-    Called when the user has asked for a sensitive action and we are about to
-    ask them their security question. A LOCKED session is NOT re-opened here.
+    Called when the user has asked for a sensitive action and we are about to ask
+    the first of their `total_questions` security questions. A LOCKED session is
+    NOT re-opened here.
 
     Returns the resulting status.
     """
     current = get_state(session_state)
-    if current["status"] == LOCKED:
-        return LOCKED
+    if current["status"] == VerificationState.LOCKED:
+        return VerificationState.LOCKED
 
     verification = _new_state()
-    verification["status"] = CHALLENGED
+    verification["status"] = VerificationState.CHALLENGED
     verification["challenged_at"] = _now()
+    verification["total_questions"] = total_questions
     _save(session_state, verification)
-    return CHALLENGED
+    return VerificationState.CHALLENGED
+
+
+def current_question_index(session_state) -> int:
+    """Index of the security question the user must answer next."""
+    return get_state(session_state)["question_index"]
 
 
 def record_answer(session_state, is_correct: bool) -> str:
-    """Record the result of the user's security answer.
+    """Record the result of one security answer.
 
-    Correct  -> VERIFIED.
-    Wrong    -> stay CHALLENGED, increment attempts; at the limit -> LOCKED.
+    Correct  -> advance to the next question; VERIFIED once all are answered.
+    Wrong    -> stay CHALLENGED on the same question, increment attempts; at the
+                limit -> LOCKED.
 
     Returns the resulting status.
     """
     verification = get_state(session_state)
 
     # Once locked, nothing here can unlock it.
-    if verification["status"] == LOCKED:
-        return LOCKED
+    if verification["status"] == VerificationState.LOCKED:
+        return VerificationState.LOCKED
+
+    # Zero-trust guard: an answer only counts toward a verification that was
+    # properly started (start_challenge sets CHALLENGED + total_questions). If the
+    # model skipped that, refuse — otherwise total_questions would be 0 and a
+    # single answer would satisfy `question_index >= total_questions`.
+    if verification["status"] != VerificationState.CHALLENGED or verification["total_questions"] <= 0:
+        return verification["status"]
 
     if is_correct:
-        verification["status"] = VERIFIED
-        verification["verified_at"] = _now()
+        verification["question_index"] += 1
+        if verification["question_index"] >= verification["total_questions"]:
+            verification["status"] = VerificationState.VERIFIED
+            verification["verified_at"] = _now()
+        # else: more questions remain — stay CHALLENGED
     else:
         verification["attempts"] += 1
         if verification["attempts"] >= config.MAX_FAILED_ATTEMPTS:
-            verification["status"] = LOCKED
+            verification["status"] = VerificationState.LOCKED
 
     _save(session_state, verification)
     return verification["status"]
@@ -145,7 +169,7 @@ def is_verified(session_state) -> bool:
     cannot be reused.
     """
     verification = get_state(session_state)
-    if verification["status"] != VERIFIED:
+    if verification["status"] != VerificationState.VERIFIED:
         return False
 
     verified_at = verification.get("verified_at")

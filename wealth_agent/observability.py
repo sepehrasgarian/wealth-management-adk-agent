@@ -29,11 +29,70 @@ logger = logging.getLogger("wealth_agent")
 _configured = False
 
 
+# Tool argument names that must never be logged (they carry secrets).
+_SENSITIVE_ARG_NAMES = {"answer"}
+
+
+def log_tool_activity(tool, args, tool_context, tool_response) -> None:
+    """ADK `after_tool_callback`: record every tool call + result as one
+    structured log line, and attach it to the current trace span.
+
+    This works in BOTH text and voice sessions (callbacks fire either way), so a
+    voice conversation becomes observable in plain text — you can see exactly
+    which tools ran and what they returned. Sensitive args (the security answer)
+    are masked. Returns None so the tool's real response is used unchanged.
+    """
+    safe_args = {
+        key: ("***" if key in _SENSITIVE_ARG_NAMES else value)
+        for key, value in (args or {}).items()
+    }
+    status = tool_response.get("status") if isinstance(tool_response, dict) else None
+    payload = {
+        "tool": getattr(tool, "name", str(tool)),
+        "args": safe_args,
+        "status": status,
+        "invocation_id": getattr(tool_context, "invocation_id", None),
+    }
+    logger.info("tool_activity %s", payload)
+
+    try:
+        from opentelemetry import trace
+
+        span = trace.get_current_span()
+        if span is not None and span.is_recording():
+            span.add_event(
+                f"tool.{payload['tool']}",
+                attributes={"status": status or "", "args": str(safe_args)},
+            )
+            # Classify the trace in Langfuse: group all turns of a conversation
+            # under one session, and tag the authenticated user so traces can be
+            # filtered per user (user_123 vs user_456). Langfuse reads these
+            # specific span attributes.
+            session = getattr(tool_context, "session", None)
+            session_id = getattr(session, "id", None)
+            user_id = (getattr(tool_context, "state", None) or {}).get("user_id")
+            if session_id:
+                span.set_attribute("langfuse.session.id", str(session_id))
+            if user_id:
+                span.set_attribute("langfuse.user.id", str(user_id))
+    except Exception:  # telemetry must never break the request path
+        pass
+    return None
+
+
 def setup_logging(level: int = logging.INFO) -> None:
-    """Configure structured application logging (one line per event)."""
+    """Configure structured logging — to the console AND an append-only log file.
+
+    The file (config.LOG_FILE) gives a durable trail of tool activity and security
+    audit events; the console handler keeps them visible while developing.
+    """
     logging.basicConfig(
         level=level,
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler(config.LOG_FILE),
+        ],
     )
 
 

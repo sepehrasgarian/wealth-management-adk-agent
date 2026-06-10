@@ -92,12 +92,18 @@ cp wealth_agent/.env.example wealth_agent/.env
 #   (free key from https://aistudio.google.com/app/apikey)
 ```
 
-The SQLite mock database is created and seeded automatically on first run with one
-demo user:
+The SQLite mock database is created and seeded automatically on first run. It is
+**multi-user**, and each user has **two** security questions — both must be
+answered to verify. The active user comes from the authenticated session (never
+the model), so users are isolated.
 
-| user_id | security question | answer | checking | savings |
-|---|---|---|---|---|
-| `user_123` | "What is the name of your first pet?" | `Rex` | 2000.00 | 5000.00 |
+| user_id | security questions (answers) | checking | savings |
+|---|---|---|---|
+| `user_123` | first pet (`Rex`) · favorite color (`Blue`) | 2000.00 | 5000.00 |
+| `user_456` | birth city (`Toronto`) · first school (`Maple`) | 8000.00 | 12000.00 |
+
+`adk web` runs as `user_123` by default; the evalsets set the active user in
+`session_input.state`.
 
 ---
 
@@ -109,10 +115,11 @@ adk web                 # browser UI at http://127.0.0.1:8000 — pick "wealth_a
 adk run wealth_agent    # chat in the terminal
 ```
 
-Try in the chat:
+Try in the chat (as `user_123`):
 - `What is my portfolio balance?` → answered directly (no verification).
-- `Transfer $500 from checking to savings` → asks your security question.
-  - Answer `Rex` → a **Confirm / Reject** button appears (HITL) → approve → done.
+- `Transfer $500 from checking to savings` → asks the first security question.
+  - Answer `Rex`, then `Blue` (both questions) → a **Confirm / Reject** button
+    appears (HITL) → approve → done.
   - Answer wrong → "incorrect, N attempts remaining" → 3 wrong → **locked**.
 
 The `adk web` inspector shows the tool calls and the live session state
@@ -195,21 +202,25 @@ provider, and the traces. This project applies layered data protection:
 
 ## Voice (bonus)
 
-The same agent runs over voice using a Gemini native-audio Live model — no code
-changes, just a model swap (ADK's `adk web` shows a mic when the model supports
-the Live API). Use **conversational** confirmation for voice, because ADK's
-native confirmation button is not supported in live/voice mode:
+The same agent runs over voice using a Gemini Live model — no code changes, just
+a model swap (ADK's `adk web` shows a mic when the model supports the Live API).
+The `wealth_agent_voice` app uses a **half-cascade** Live model:
 
 ```bash
-WEALTH_MODEL=gemini-2.5-flash-native-audio-latest \
-WEALTH_CONFIRMATION_MODE=conversational \
-adk web
+adk web wealth_agent_voice
 ```
 
-**Confirmation modes** (`WEALTH_CONFIRMATION_MODE`):
-- `button` (default) — native ADK Confirm/Reject button; best in text / `adk web`.
-- `conversational` — the agent asks you to say "yes"/"no"; works in **voice and
-  text** (the agent calls `confirm_transfer` with your answer).
+**Use half-cascade, not native-audio, for this agent.** Half-cascade models
+(e.g. `gemini-3.1-flash-live-preview`) convert audio→text internally, so
+**function calling is reliable**. Native-audio models (`*-native-audio-*`) sound
+better but have **unreliable tool calling in preview** — verified: native-audio
+connected but never called tools over voice, while half-cascade called
+`get_portfolio_balance` and produced audio. Since this agent is tool-heavy
+(verify/transfer), half-cascade is required for voice.
+
+**Confirmation:** transfers are confirmed conversationally — the agent states the
+exact transfer, asks you to say "yes"/"no", and calls `confirm_transfer` with your
+answer. One human-in-the-loop path that works in both text and voice.
 
 **Voice caveats:** ADK live streaming is preview — a bidirectional stream can't be
 restarted (refresh to start a new one). And spoken knowledge-based answers are a
@@ -228,8 +239,8 @@ environment variables (`.env`):
 | `WEALTH_MODEL` | `gemini-2.5-flash` | The model the agent uses |
 | `WEALTH_VERIFICATION_TTL_SECONDS` | `120` | How long a verification stays valid |
 | `WEALTH_MAX_FAILED_ATTEMPTS` | `3` | Wrong answers before lockout |
-| `WEALTH_REQUIRE_TRANSFER_CONFIRMATION` | `true` | HITL confirmation on transfers |
-| `WEALTH_CONFIRMATION_MODE` | `button` | `button` (text) or `conversational` (voice) |
+| `WEALTH_MAX_TRANSFER_AMOUNT` | `10000` | Max amount allowed in a single transfer |
+| `WEALTH_REQUIRE_TRANSFER_CONFIRMATION` | `true` | HITL confirmation on transfers (say yes/no) |
 | `WEALTH_TRACING_ENABLED` | `false` | Export OpenTelemetry traces |
 
 ---

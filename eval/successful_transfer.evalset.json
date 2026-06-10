@@ -1,7 +1,7 @@
 {
   "eval_set_id": "successful_transfer",
   "name": "Successful Transfer (Authenticated)",
-  "description": "The user requests a transfer, is asked their security question, answers correctly, and the transfer is executed. Trajectory: get_security_question -> verify_security_answer -> transfer_funds.",
+  "description": "The user requests a transfer, answers BOTH security questions correctly, and the transfer executes. Trajectory: get_security_question -> verify_security_answer (Q1) -> verify_security_answer (Q2) + transfer_funds.",
   "eval_cases": [
     {
       "eval_id": "successful_transfer_authenticated",
@@ -27,7 +27,7 @@
           }
         },
         {
-          "invocation_id": "turn-2-correct-answer",
+          "invocation_id": "turn-2-first-answer",
           "user_content": {
             "role": "user",
             "parts": [
@@ -36,7 +36,27 @@
           },
           "intermediate_data": {
             "tool_uses": [
-              { "name": "verify_security_answer", "args": { "answer": "Rex" } },
+              { "name": "verify_security_answer", "args": { "answer": "Rex" } }
+            ]
+          },
+          "final_response": {
+            "role": "model",
+            "parts": [
+              { "text": "Thank you. One more question: what is your favorite color?" }
+            ]
+          }
+        },
+        {
+          "invocation_id": "turn-3-second-answer",
+          "user_content": {
+            "role": "user",
+            "parts": [
+              { "text": "Blue" }
+            ]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              { "name": "verify_security_answer", "args": { "answer": "Blue" } },
               {
                 "name": "transfer_funds",
                 "args": { "from_account": "checking", "to_account": "savings", "amount": 500 }
