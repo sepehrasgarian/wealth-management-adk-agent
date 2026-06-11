@@ -39,3 +39,6 @@ htmlcov/
 # Submission archive (generated)
 *.zip
 Screenshot*
+
+# Local rehearsal trace script (not part of submission)
+trace_demo.py

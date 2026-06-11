@@ -23,10 +23,11 @@ def test_each_user_has_two_distinct_security_questions():
     assert q123 != q456  # different users, different questions
 
 
-def test_get_security_question_by_position():
-    assert "pet" in services.get_security_question("user_123", 0).lower()
-    assert "color" in services.get_security_question("user_123", 1).lower()
-    assert services.get_security_question("nobody", 0) is None
+def test_security_questions_are_returned_in_order():
+    questions = services.get_security_questions("user_123")
+    assert "pet" in questions[0].lower()      # position 0
+    assert "color" in questions[1].lower()    # position 1
+    assert services.get_security_questions("nobody") == []  # unknown user
 
 
 def test_check_security_answer_is_case_and_space_insensitive():

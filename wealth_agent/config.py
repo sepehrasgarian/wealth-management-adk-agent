@@ -131,3 +131,18 @@ SERVICE_NAME = env("WEALTH_SERVICE_NAME", "wealth-management-assistant")
 # Application log file. Structured logs and security audit events are written
 # here (append-only) as well as to the console, so there's a durable trail.
 LOG_FILE = env("WEALTH_LOG_FILE", "wealth_agent.log")
+
+# Verbose step-by-step trace ([SEC]/[TOOL]/[SVC] lines showing exactly which
+# function runs where). Off by default (clean output); set WEALTH_DEBUG_TRACE=true
+# to follow the flow live — handy for demos and understanding the code.
+DEBUG_TRACE = env_bool("WEALTH_DEBUG_TRACE", False)
+
+
+def trace(message: str) -> None:
+    """Print a step-by-step trace line, but ONLY when WEALTH_DEBUG_TRACE is on.
+
+    Lets us follow exactly which function runs where without leaving raw prints in
+    the code: silent by default, opt-in for demos and debugging.
+    """
+    if DEBUG_TRACE:
+        print(message)

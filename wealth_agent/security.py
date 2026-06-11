@@ -102,7 +102,9 @@ def start_challenge(session_state, total_questions: int) -> str:
     Returns the resulting status.
     """
     current = get_state(session_state)
+    config.trace(f"[SEC] start_challenge(total={total_questions}) — current status={current['status']}")
     if current["status"] == VerificationState.LOCKED:
+        config.trace("[SEC]   → LOCKED: cannot start, session is locked")
         return VerificationState.LOCKED
 
     verification = _new_state()
@@ -110,6 +112,7 @@ def start_challenge(session_state, total_questions: int) -> str:
     verification["challenged_at"] = _now()
     verification["total_questions"] = total_questions
     _save(session_state, verification)
+    config.trace(f"[SEC]   → CHALLENGED: asking question 1 of {total_questions}")
     return VerificationState.CHALLENGED
 
 
@@ -128,9 +131,11 @@ def record_answer(session_state, is_correct: bool) -> str:
     Returns the resulting status.
     """
     verification = get_state(session_state)
+    config.trace(f"[SEC] record_answer(is_correct={is_correct}): index={verification['question_index']}/{verification['total_questions']}, attempts={verification['attempts']}")
 
     # Once locked, nothing here can unlock it.
     if verification["status"] == VerificationState.LOCKED:
+        config.trace("[SEC]   → already LOCKED, ignoring")
         return VerificationState.LOCKED
 
     # Zero-trust guard: an answer only counts toward a verification that was
@@ -138,6 +143,7 @@ def record_answer(session_state, is_correct: bool) -> str:
     # model skipped that, refuse — otherwise total_questions would be 0 and a
     # single answer would satisfy `question_index >= total_questions`.
     if verification["status"] != VerificationState.CHALLENGED or verification["total_questions"] <= 0:
+        config.trace("[SEC]   → not CHALLENGED (no active verification) → refusing to record")
         return verification["status"]
 
     if is_correct:
@@ -145,11 +151,17 @@ def record_answer(session_state, is_correct: bool) -> str:
         if verification["question_index"] >= verification["total_questions"]:
             verification["status"] = VerificationState.VERIFIED
             verification["verified_at"] = _now()
-        # else: more questions remain — stay CHALLENGED
+            config.trace("[SEC]   → correct & all questions answered → VERIFIED")
+        else:
+            left = verification["total_questions"] - verification["question_index"]
+            config.trace(f"[SEC]   → correct, {left} question(s) left → still CHALLENGED")
     else:
         verification["attempts"] += 1
         if verification["attempts"] >= config.MAX_FAILED_ATTEMPTS:
             verification["status"] = VerificationState.LOCKED
+            config.trace(f"[SEC]   → wrong, attempt {verification['attempts']}/{config.MAX_FAILED_ATTEMPTS} → LOCKED")
+        else:
+            config.trace(f"[SEC]   → wrong, attempt {verification['attempts']}/{config.MAX_FAILED_ATTEMPTS} → still CHALLENGED")
 
     _save(session_state, verification)
     return verification["status"]
@@ -170,14 +182,18 @@ def is_verified(session_state) -> bool:
     """
     verification = get_state(session_state)
     if verification["status"] != VerificationState.VERIFIED:
+        config.trace(f"[SEC] is_verified → False (status={verification['status']})")
         return False
 
     verified_at = verification.get("verified_at")
     if verified_at is None:
+        config.trace("[SEC] is_verified → False (never verified)")
         return False
 
     age = _now() - verified_at
-    return age <= config.VERIFICATION_TTL_SECONDS
+    fresh = age <= config.VERIFICATION_TTL_SECONDS
+    config.trace(f"[SEC] is_verified → {fresh} (age={age:.1f}s, ttl={config.VERIFICATION_TTL_SECONDS}s)")
+    return fresh
 
 
 def consume(session_state) -> None:
@@ -186,6 +202,7 @@ def consume(session_state) -> None:
     Verification is single-use: each transfer requires its own fresh
     verification, so we clear it as soon as one has been used.
     """
+    config.trace("[SEC] consume → verification reset to UNVERIFIED (single-use)")
     _save(session_state, _new_state())
 
 
@@ -211,6 +228,7 @@ def log_security_event(
         payload.setdefault("invocation_id", getattr(tool_context, "invocation_id", None))
 
     logger.info("security_event %s", payload)
+    config.trace(f"[SEC] audit event → {payload}")
 
     # Best-effort: attach to the active trace span for Langfuse / Cloud Trace.
     try:
@@ -243,13 +261,17 @@ def security_gate(
     ADK uses as the tool's result instead of actually running it.
     """
     if tool.name not in config.SENSITIVE_TOOLS:
+        config.trace(f"[SEC] gate: tool={tool.name} (not sensitive) → ALLOW")
         return None  # not sensitive: allow
 
+    config.trace(f"[SEC] gate: tool={tool.name} (SENSITIVE) — checking verification…")
     if is_verified(tool_context.state):
+        config.trace(f"[SEC] gate → ALLOW {tool.name} (verified)")
         return None  # verified and fresh: allow the tool to run
 
     # Blocked: record the attempt and short-circuit the tool.
     status = get_state(tool_context.state)["status"]
+    config.trace(f"[SEC] gate → BLOCK {tool.name} (status={status}) — not verified")
     log_security_event(
         "unauthorized_transfer_attempt",
         tool_context,

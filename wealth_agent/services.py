@@ -27,6 +27,7 @@ class TransferError(Exception):
 
 def get_account_balances(user_id: str) -> Optional[dict]:
     """Return the user's balances, or None if the user has no accounts."""
+    config.trace(f"[SVC] get_account_balances(user={user_id}) → DB")
     with get_connection() as connection:
         row = connection.execute(
             "SELECT checking_balance, savings_balance FROM accounts WHERE user_id = ?",
@@ -46,22 +47,13 @@ def get_security_questions(user_id: str) -> list[str]:
 
     Each user has more than one question; ALL must be answered to verify.
     """
+    config.trace(f"[SVC] get_security_questions(user={user_id}) → DB")
     with get_connection() as connection:
         rows = connection.execute(
             "SELECT question FROM security_questions WHERE user_id = ? ORDER BY position",
             (user_id,),
         ).fetchall()
     return [row["question"] for row in rows]
-
-
-def get_security_question(user_id: str, position: int) -> Optional[str]:
-    """Return the user's security question at `position`, or None if missing."""
-    with get_connection() as connection:
-        row = connection.execute(
-            "SELECT question FROM security_questions WHERE user_id = ? AND position = ?",
-            (user_id, position),
-        ).fetchone()
-    return row["question"] if row else None
 
 
 def check_security_answer(user_id: str, position: int, answer: str) -> bool:
@@ -78,8 +70,11 @@ def check_security_answer(user_id: str, position: int, answer: str) -> bool:
         ).fetchone()
 
     if row is None:
+        config.trace(f"[SVC] check_security_answer(user={user_id}, pos={position}) → False (no such question)")
         return False
-    return answer.strip().casefold() == row["answer"].strip().casefold()
+    ok = answer.strip().casefold() == row["answer"].strip().casefold()
+    config.trace(f"[SVC] check_security_answer(user={user_id}, pos={position}, answer=***) → {ok}")
+    return ok
 
 
 def validate_transfer(
@@ -100,6 +95,7 @@ def validate_transfer(
     """
     from_account = from_account.strip().casefold()
     to_account = to_account.strip().casefold()
+    config.trace(f"[SVC] validate_transfer: {from_account}→{to_account} ${amount} (user={user_id})")
 
     if from_account not in ACCOUNTS or to_account not in ACCOUNTS:
         raise TransferError("Accounts must be 'checking' or 'savings'.")
@@ -123,6 +119,7 @@ def validate_transfer(
             f"{from_balance:.2f}, so you cannot transfer {amount:.2f}."
         )
 
+    config.trace(f"[SVC] validate_transfer → OK ({from_account}→{to_account})")
     return from_account, to_account
 
 
@@ -151,6 +148,7 @@ def execute_transfer(
     # transfers for the same user. A production system would do the debit/credit
     # in one atomic, row-locked transaction (e.g. SELECT ... FOR UPDATE).
 
+    config.trace(f"[SVC] execute_transfer: moving ${amount} {from_account}→{to_account} (user={user_id}) ✍ DB")
     with get_connection() as connection:
         connection.execute(
             f"UPDATE accounts SET {from_column} = {from_column} - ?, "

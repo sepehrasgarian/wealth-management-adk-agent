@@ -42,6 +42,7 @@ def _perform_transfer(
     actual money movement and bookkeeping live in exactly one place.
     """
     user_id = _current_user_id(tool_context)
+    config.trace(f"[TOOL] _perform_transfer: {from_account}→{to_account} ${amount} (user={user_id})")
     try:
         balances = services.execute_transfer(user_id, from_account, to_account, amount)
     except services.TransferError as error:
@@ -76,6 +77,7 @@ def get_portfolio_balance(tool_context: ToolContext) -> dict:
         "total_balance"} or {"status": "error", "message"}.
     """
     user_id = _current_user_id(tool_context)
+    config.trace(f"[TOOL] get_portfolio_balance (user={user_id})")
     balances = services.get_account_balances(user_id)
     if balances is None:
         return {"status": "error", "message": "No accounts found for this user."}
@@ -97,6 +99,7 @@ def get_security_question(tool_context: ToolContext) -> dict:
         "message"} (for example, if the account is locked).
     """
     user_id = _current_user_id(tool_context)
+    config.trace(f"[TOOL] get_security_question (user={user_id})")
 
     # Idempotent: if the session is already verified (and still fresh), don't
     # restart the challenge — that would throw away a valid verification. Tell the
@@ -107,7 +110,7 @@ def get_security_question(tool_context: ToolContext) -> dict:
             "already_verified": True,
             "message": "The user is already verified. Proceed with the requested action; do not ask a security question.",
         }
-
+    # Get the security questions since start_challenge requires it
     questions = services.get_security_questions(user_id)
     if not questions:
         return {"status": "error", "message": "No security questions on file for this user."}
@@ -140,9 +143,9 @@ def verify_security_answer(answer: str, tool_context: ToolContext) -> dict:
         "next_question"?: str, "attempts_remaining"?: int}.
     """
     user_id = _current_user_id(tool_context)
+    config.trace(f"[TOOL] verify_security_answer (user={user_id}, answer=***)")
 
-    # Be robust to the model's call order: if verification wasn't started (the
-    # model skipped get_security_question), start it now. This is still SAFE —
+    # Be robust to the model's call order: if verification wasn't started 
     # start_challenge sets total_questions (the user's full question count), so a
     # single answer can never satisfy the multi-question requirement. It just
     # means the agent can verify even if it forgot to fetch the question first.
@@ -169,7 +172,9 @@ def verify_security_answer(answer: str, tool_context: ToolContext) -> dict:
     # flag tells the agent whether this answer was right (advance to the next
     # question) or wrong (retry the same one), so it phrases the reply correctly.
     next_index = security.current_question_index(tool_context.state)
-    next_question = services.get_security_question(user_id, next_index)
+
+    questions = services.get_security_questions(user_id)
+    next_question = questions[next_index] if next_index < len(questions) else None
 
     if is_correct:
         return {
@@ -215,6 +220,7 @@ def transfer_funds(
         or {"status": "confirmation_required"/"error", "message"}.
     """
     user_id = _current_user_id(tool_context)
+    config.trace(f"[TOOL] transfer_funds: {from_account}→{to_account} ${amount} (user={user_id})")
 
     # Validate up front: reject an impossible transfer (bad account, over the
     # limit, insufficient funds) IMMEDIATELY — before asking the user to confirm —
@@ -260,6 +266,7 @@ def confirm_transfer(approve: bool, tool_context: ToolContext) -> dict:
         "savings_balance"}. On cancel or if nothing is pending:
         {"status": "error", "message"}.
     """
+    config.trace(f"[TOOL] confirm_transfer(approve={approve})")
     pending = tool_context.state.get(STATE_PENDING_TRANSFER)
     if not pending:
         return {"status": "error", "message": "There is no transfer awaiting confirmation."}

@@ -118,8 +118,8 @@ adk run wealth_agent    # chat in the terminal
 Try in the chat (as `user_123`):
 - `What is my portfolio balance?` → answered directly (no verification).
 - `Transfer $500 from checking to savings` → asks the first security question.
-  - Answer `Rex`, then `Blue` (both questions) → a **Confirm / Reject** button
-    appears (HITL) → approve → done.
+  - Answer `Rex`, then `Blue` (both questions) → the agent states the exact
+    transfer and asks you to confirm; reply `yes` (HITL) → done.
   - Answer wrong → "incorrect, N attempts remaining" → 3 wrong → **locked**.
 
 The `adk web` inspector shows the tool calls and the live session state
@@ -237,7 +237,7 @@ environment variables (`.env`):
 | Variable | Default | Meaning |
 |---|---|---|
 | `WEALTH_MODEL` | `gemini-2.5-flash` | The model the agent uses |
-| `WEALTH_VERIFICATION_TTL_SECONDS` | `120` | How long a verification stays valid |
+| `WEALTH_VERIFICATION_TTL_SECONDS` | `180` | How long a verification stays valid |
 | `WEALTH_MAX_FAILED_ATTEMPTS` | `3` | Wrong answers before lockout |
 | `WEALTH_MAX_TRANSFER_AMOUNT` | `10000` | Max amount allowed in a single transfer |
 | `WEALTH_REQUIRE_TRANSFER_CONFIRMATION` | `true` | HITL confirmation on transfers (say yes/no) |
