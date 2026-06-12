@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from . import config
 from .database import get_connection
 
 # The only account types that exist in this prototype.
@@ -26,6 +27,7 @@ class TransferError(Exception):
 
 def get_account_balances(user_id: str) -> Optional[dict]:
     """Return the user's balances, or None if the user has no accounts."""
+    config.trace(f"[SVC] get_account_balances(user={user_id}) → DB")
     with get_connection() as connection:
         row = connection.execute(
             "SELECT checking_balance, savings_balance FROM accounts WHERE user_id = ?",
@@ -40,19 +42,22 @@ def get_account_balances(user_id: str) -> Optional[dict]:
     }
 
 
-def get_security_question(user_id: str) -> Optional[str]:
-    """Return the user's security question, or None if the user is unknown."""
+def get_security_questions(user_id: str) -> list[str]:
+    """Return the user's security questions in order (empty list if unknown).
+
+    Each user has more than one question; ALL must be answered to verify.
+    """
+    config.trace(f"[SVC] get_security_questions(user={user_id}) → DB")
     with get_connection() as connection:
-        row = connection.execute(
-            "SELECT security_question FROM users WHERE user_id = ?",
+        rows = connection.execute(
+            "SELECT question FROM security_questions WHERE user_id = ? ORDER BY position",
             (user_id,),
-        ).fetchone()
+        ).fetchall()
+    return [row["question"] for row in rows]
 
-    return row["security_question"] if row else None
 
-
-def check_security_answer(user_id: str, answer: str) -> bool:
-    """Return True if `answer` matches the user's stored security answer.
+def check_security_answer(user_id: str, position: int, answer: str) -> bool:
+    """Return True if `answer` matches the stored answer at `position`.
 
     The comparison ignores surrounding whitespace and letter case, so "rex"
     matches "Rex". In production the stored value would be a salted hash and we
@@ -60,13 +65,62 @@ def check_security_answer(user_id: str, answer: str) -> bool:
     """
     with get_connection() as connection:
         row = connection.execute(
-            "SELECT security_answer FROM users WHERE user_id = ?",
-            (user_id,),
+            "SELECT answer FROM security_questions WHERE user_id = ? AND position = ?",
+            (user_id, position),
         ).fetchone()
 
     if row is None:
+        config.trace(f"[SVC] check_security_answer(user={user_id}, pos={position}) → False (no such question)")
         return False
-    return answer.strip().casefold() == row["security_answer"].strip().casefold()
+    ok = answer.strip().casefold() == row["answer"].strip().casefold()
+    config.trace(f"[SVC] check_security_answer(user={user_id}, pos={position}, answer=***) → {ok}")
+    return ok
+
+
+def validate_transfer(
+    user_id: str,
+    from_account: str,
+    to_account: str,
+    amount: float,
+) -> tuple[str, str]:
+    """Check that a transfer is allowed WITHOUT moving any money.
+
+    Raises TransferError if the request is invalid (unknown account, same
+    source and destination, non-positive amount, over the per-transfer limit,
+    or insufficient funds). Returns the normalized (from_account, to_account).
+
+    Used to reject an impossible transfer up front — before asking the user to
+    confirm — so they get an immediate, clear "no" instead of going through the
+    whole verification/confirmation flow only to fail at the end.
+    """
+    from_account = from_account.strip().casefold()
+    to_account = to_account.strip().casefold()
+    config.trace(f"[SVC] validate_transfer: {from_account}→{to_account} ${amount} (user={user_id})")
+
+    if from_account not in ACCOUNTS or to_account not in ACCOUNTS:
+        raise TransferError("Accounts must be 'checking' or 'savings'.")
+    if from_account == to_account:
+        raise TransferError("Source and destination accounts must be different.")
+    if amount <= 0:
+        raise TransferError("Transfer amount must be greater than zero.")
+    if amount > config.MAX_TRANSFER_AMOUNT:
+        raise TransferError(
+            f"Transfer amount exceeds the per-transfer limit of "
+            f"{config.MAX_TRANSFER_AMOUNT:.2f}."
+        )
+
+    balances = get_account_balances(user_id)
+    if balances is None:
+        raise TransferError("No accounts found for this user.")
+    from_balance = balances[f"{from_account}_balance"]
+    if from_balance < amount:
+        raise TransferError(
+            f"Insufficient funds: your {from_account} balance is "
+            f"{from_balance:.2f}, so you cannot transfer {amount:.2f}."
+        )
+
+    config.trace(f"[SVC] validate_transfer → OK ({from_account}→{to_account})")
+    return from_account, to_account
 
 
 def execute_transfer(
@@ -77,37 +131,25 @@ def execute_transfer(
 ) -> dict:
     """Move money between the user's own accounts and return the new balances.
 
-    Raises TransferError if the request is invalid (unknown account, same
-    source and destination, non-positive amount, or insufficient funds).
+    Re-validates with `validate_transfer` (so it is safe to call directly), then
+    performs the debit/credit. Raises TransferError if the request is invalid.
     """
-    from_account = from_account.strip().casefold()
-    to_account = to_account.strip().casefold()
+    # Validate again here (the amount/balance may have changed since the up-front
+    # check) and get the normalized account names.
+    from_account, to_account = validate_transfer(user_id, from_account, to_account, amount)
 
-    if from_account not in ACCOUNTS or to_account not in ACCOUNTS:
-        raise TransferError("Accounts must be 'checking' or 'savings'.")
-    if from_account == to_account:
-        raise TransferError("Source and destination accounts must be different.")
-    if amount <= 0:
-        raise TransferError("Transfer amount must be greater than zero.")
-
-    # Column names come from the fixed ACCOUNTS allow-list above, so building
-    # them into the SQL string cannot be used for injection.
+    # Column names come from the fixed ACCOUNTS allow-list, so building them into
+    # the SQL string cannot be used for injection.
     from_column = f"{from_account}_balance"
     to_column = f"{to_account}_balance"
 
+    # NOTE (mock simplification): validation and the update below are not wrapped
+    # in a single locked transaction, so they are not safe against concurrent
+    # transfers for the same user. A production system would do the debit/credit
+    # in one atomic, row-locked transaction (e.g. SELECT ... FOR UPDATE).
+
+    config.trace(f"[SVC] execute_transfer: moving ${amount} {from_account}→{to_account} (user={user_id}) ✍ DB")
     with get_connection() as connection:
-        row = connection.execute(
-            "SELECT checking_balance, savings_balance FROM accounts WHERE user_id = ?",
-            (user_id,),
-        ).fetchone()
-
-        if row is None:
-            raise TransferError("No accounts found for this user.")
-        if row[from_column] < amount:
-            raise TransferError(
-                f"Insufficient funds: {from_account} balance is {row[from_column]:.2f}."
-            )
-
         connection.execute(
             f"UPDATE accounts SET {from_column} = {from_column} - ?, "
             f"{to_column} = {to_column} + ? WHERE user_id = ?",

@@ -1,0 +1,9 @@
+[run]
+# observability.py is pure I/O wiring (OpenTelemetry exporter setup). It is
+# exercised by running the app, not by unit tests, so we exclude it from the
+# coverage percentage to keep the number focused on application logic.
+omit =
+    wealth_agent/observability.py
+
+[report]
+show_missing = True

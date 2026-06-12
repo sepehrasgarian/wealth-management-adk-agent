@@ -1,9 +1,4 @@
-"""Central configuration — the single source of truth for every tunable value.
-
-Every number, model name, path, and feature toggle in the project lives here so
-you never have to hunt through the logic to change one. Each setting reads from
-an environment variable (so you can override it via wealth_agent/.env without
-editing code) and falls back to a sensible default.
+"""Central configuration 
 
 Usage in other modules:
     from . import config
@@ -53,6 +48,15 @@ def env_bool(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"true", "1", "yes", "on"}
 
 
+def env_float(name: str, default: float) -> float:
+    """Read a float setting; fall back to the default if missing/invalid."""
+    raw = os.environ.get(name)
+    try:
+        return float(raw) if raw not in (None, "") else default
+    except ValueError:
+        return default
+
+
 # ---------------------------------------------------------------------------
 # Model
 # ---------------------------------------------------------------------------
@@ -60,8 +64,20 @@ def env_bool(name: str, default: bool) -> bool:
 # The Gemini model the assistant uses for normal (text) interactions.
 MODEL = env("WEALTH_MODEL", "gemini-2.5-flash")
 
-# A Gemini "Live" model used only for the optional voice demo (run via adk web).
-LIVE_MODEL = env("WEALTH_LIVE_MODEL", "gemini-2.0-flash-live-001")
+# Model retry settings (robustness when the model fails to respond).
+# client this many times.
+MODEL_HTTP_RETRY_ATTEMPTS = env_int("WEALTH_MODEL_HTTP_RETRY_ATTEMPTS", 3)
+# Occasionally Gemini returns an EMPTY response (no text, no tool call) — not an
+MODEL_EMPTY_RESPONSE_RETRIES = env_int("WEALTH_MODEL_EMPTY_RESPONSE_RETRIES", 2)
+
+# A Gemini "Live" model for the optional voice demo (run via adk web).
+# Must support the Live API (bidiGenerateContent). Use a HALF-CASCADE model
+# (e.g. gemini-3.1-flash-live-preview), NOT a native-audio model: half-cascade
+# converts audio->text internally so FUNCTION CALLING is reliable, whereas
+# native-audio models have limited/unreliable tool calling in preview. Since
+# this agent is tool-heavy (verify/transfer), half-cascade is required.
+# To enable voice: set WEALTH_MODEL to this value and restart `adk web`.
+LIVE_MODEL = env("WEALTH_LIVE_MODEL", "gemini-3.1-flash-live-preview")
 
 
 # ---------------------------------------------------------------------------
@@ -69,14 +85,24 @@ LIVE_MODEL = env("WEALTH_LIVE_MODEL", "gemini-2.0-flash-live-001")
 # ---------------------------------------------------------------------------
 
 # How long a successful verification stays valid, in seconds.
-VERIFICATION_TTL_SECONDS = env_int("WEALTH_VERIFICATION_TTL_SECONDS", 120)
+VERIFICATION_TTL_SECONDS = env_int("WEALTH_VERIFICATION_TTL_SECONDS", 180)
 
 # How many wrong security answers are allowed before the session is LOCKED.
 MAX_FAILED_ATTEMPTS = env_int("WEALTH_MAX_FAILED_ATTEMPTS", 3)
 
+# Maximum amount allowed in a single transfer. 
+# request above this is rejected. 
+MAX_TRANSFER_AMOUNT = env_float("WEALTH_MAX_TRANSFER_AMOUNT", 10000.0)
+
 # Tool names that move money / take sensitive action and therefore require a
 # verified session. The security gate protects every tool listed here.
-SENSITIVE_TOOLS = {"transfer_funds"}
+SENSITIVE_TOOLS = {"transfer_funds", "confirm_transfer"}
+
+# Whether transfers require an explicit human-in-the-loop confirmation before the
+# money moves. The agent asks the user to confirm by saying "yes"/"no" (one path
+# that works in both text and voice). Set to false only for deterministic
+# trajectory evals, which cannot answer a confirmation prompt.
+REQUIRE_TRANSFER_CONFIRMATION = env_bool("WEALTH_REQUIRE_TRANSFER_CONFIRMATION", True)
 
 
 # ---------------------------------------------------------------------------
@@ -101,3 +127,22 @@ OTLP_HEADERS = env("OTEL_EXPORTER_OTLP_HEADERS", "")
 
 # A human-friendly service name attached to every trace.
 SERVICE_NAME = env("WEALTH_SERVICE_NAME", "wealth-management-assistant")
+
+# Application log file. Structured logs and security audit events are written
+# here (append-only) as well as to the console, so there's a durable trail.
+LOG_FILE = env("WEALTH_LOG_FILE", "wealth_agent.log")
+
+# Verbose step-by-step trace ([SEC]/[TOOL]/[SVC] lines showing exactly which
+# function runs where). Off by default (clean output); set WEALTH_DEBUG_TRACE=true
+# to follow the flow live — handy for demos and understanding the code.
+DEBUG_TRACE = env_bool("WEALTH_DEBUG_TRACE", False)
+
+
+def trace(message: str) -> None:
+    """Print a step-by-step trace line, but ONLY when WEALTH_DEBUG_TRACE is on.
+
+    Lets us follow exactly which function runs where without leaving raw prints in
+    the code: silent by default, opt-in for demos and debugging.
+    """
+    if DEBUG_TRACE:
+        print(message)

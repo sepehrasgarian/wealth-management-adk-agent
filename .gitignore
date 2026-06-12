@@ -15,5 +15,30 @@ __pycache__/
 # Local SQLite database (auto-generated and seeded on first run)
 wealth_agent/wealth.db
 
-# OS noise
+# Coverage + pytest cache
+.coverage
+.pytest_cache/
+
+# ADK runtime artifacts (sessions + eval run history — regenerated on use)
+.adk/
+**/.adk/
+
+# OS noise + pasted screenshots
 .DS_Store
+Screenshot 2026-06-09 at 6.30.10 PM.png
+
+# Local eval-tab demo copy (canonical evalsets live in eval/)
+wealth_agent/*.evalset.json
+
+# Coverage HTML report (generated)
+htmlcov/
+
+# Application log file (generated)
+*.log
+
+# Submission archive (generated)
+*.zip
+Screenshot*
+
+# Local rehearsal trace script (not part of submission)
+trace_demo.py
